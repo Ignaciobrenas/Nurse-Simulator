@@ -23,4 +23,22 @@ class NurseController extends AbstractController
 
         return $this->json(['error' => 'Nurse not found'], Response::HTTP_NOT_FOUND);
     }
+
+    #[Route('/nurse/index', name: 'nurse_index', methods: ['GET'])]
+    public function getAll(): JsonResponse
+    {
+        $file = $this->getParameter('kernel.project_dir') . '/data/nurses.json';
+
+        if (!is_file($file)) {
+            return $this->json(['error' => 'nurses.json not found'], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+
+        $nurses = json_decode(file_get_contents($file), true);
+
+        if (!is_array($nurses)) {
+            return $this->json(['error' => 'nurses.json is not valid'], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+
+        return $this->json($nurses);
+    }
 }
