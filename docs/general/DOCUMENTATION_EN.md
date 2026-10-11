@@ -1,18 +1,27 @@
 # Nurse Simulator — Comprehensive Project Documentation
 
 > **M0616 - Intermodular Project | DAW 2 (Academic Year 2026/2027)**  
-> **Institution:** Stucom  
+> **Institution:** STUCOM Pelai (Barcelona)  
 > **Team:** Group pr03  
 > **Authors:** Ignacio Breñas Muñoz, Christopher Roger Tito Farez, Zehao Yin, Gorka Ramirez  
 > **Repository:** [https://github.com/Ignaciobrenas/Nurse-Simulator](https://github.com/Ignaciobrenas/Nurse-Simulator)
 
 ---
 
-## 1. Executive Summary & Purpose
+## 1. Executive Summary & Team Roles
 
 **Nurse Simulator** is a RESTful API built with **Symfony 7.4** and **PHP 8.2+** designed to simulate the management of hospital nursing staff.
 
 The project is structured as an academic team endeavor conceived to evolve incrementally across progressive development phases. In this initial phase, the API exposes essential web services for querying, searching, and authenticating nurses, utilizing a file-based storage architecture decoupled from traditional relational database systems.
+
+### Development Team & Roles
+
+| Member | Role | Responsibilities |
+|---|---|---|
+| **Ignacio Breñas Muñoz** | **Project Manager & Tech Lead** | Overall team organization, feature branch creation for each developer, issue breakdown and assignment in GitHub Projects, Pull Request reviews, and project quality assurance. |
+| **Christopher Roger Tito Farez** | **Backend Developer** | Implementation of `GET /nurse/index` endpoint and Postman run evidence. |
+| **Zehao Yin** | **Backend Developer** | Implementation of `GET /nurse/name/{name}` endpoint and 1,000 nurses mock dataset expansion. |
+| **Gorka Ramirez** | **Backend Developer** | Implementation of `POST /nurse/login` credential validation and Postman test evidence. |
 
 ---
 
@@ -184,9 +193,87 @@ curl -X POST http://localhost:8000/nurse/login \
 
 ---
 
-## 6. Architecture & Sequence Diagrams
+## 6. Architecture, UML Schemas & Flowcharts
 
-### 6.1. Sequence Diagram: Search Nurse by Name
+### 6.1. Modular Integration Schema (Individual Development to Group Repository)
+
+Based on the official intermodular assignment guidelines (`pr03_Introduccio_back_end`), each developer implemented their endpoint method individually before coordinated merging into the centralized group repository:
+
+```mermaid
+graph TD
+    subgraph Individual Developments
+        M1["👤 Member 1 (Gorka)<br><b>NurseController</b><br>+login(user, pw): boolean"]
+        M2["👤 Member 2 (Roger)<br><b>NurseController</b><br>+getAll(): List&lt;Nurse&gt;"]
+        M3["👤 Member 3 (Zehao)<br><b>NurseController</b><br>+findByName(name): Nurse"]
+    end
+
+    subgraph Centralized Group Repository
+        GC["👥 Group pr03 (Ignacio, Roger, Zehao, Gorka)<br><b>NurseController</b><br>─────────────────────────────<br>+getAll(): JsonResponse<br>+findByName(name: string): JsonResponse<br>+login(request: Request): JsonResponse"]
+    end
+
+    M1 -->|Pull Request #17| GC
+    M2 -->|Pull Request #16| GC
+    M3 -->|Pull Request #15| GC
+```
+
+### 6.2. UML Class Diagram
+
+Representation of the application classes and relationships built on Symfony 7.4:
+
+```mermaid
+classDiagram
+    direction TB
+    class Kernel {
+        <<MicroKernelTrait>>
+        +boot()
+        +registerBundles()
+    }
+
+    class AbstractController {
+        <<Symfony Framework>>
+        +json(data, status, headers, context) JsonResponse
+        +getParameter(name) mixed
+    }
+
+    class NurseController {
+        +getAll() JsonResponse
+        +findByName(name: string) JsonResponse
+        +login(request: Request) JsonResponse
+    }
+
+    class JsonResponse {
+        <<Symfony HttpFoundation>>
+        +int statusCode
+        +string content
+    }
+
+    class Request {
+        <<Symfony HttpFoundation>>
+        +getContent() string
+    }
+
+    class NurseEntity {
+        <<Data Model>>
+        +int id
+        +string name
+        +string email
+        +string password
+    }
+
+    class NursesStorage {
+        <<JSON File: data/nurses.json>>
+        +1000 items
+    }
+
+    AbstractController <|-- NurseController
+    NurseController ..> Request : receives
+    NurseController ..> JsonResponse : returns
+    NurseController ..> NursesStorage : reads and decodes
+    NursesStorage "1" *-- "1000" NurseEntity : stores
+    Kernel ..> NurseController : routes requests
+```
+
+### 6.3. Sequence Diagram: Search Nurse by Name
 
 ```mermaid
 sequenceDiagram
@@ -209,7 +296,7 @@ sequenceDiagram
     end
 ```
 
-### 6.2. Sequence Diagram: Nurse Login
+### 6.4. Sequence Diagram: Nurse Login
 
 ```mermaid
 sequenceDiagram
@@ -236,7 +323,7 @@ sequenceDiagram
     end
 ```
 
-### 6.3. Sequence Diagram: Read All Nurses
+### 6.5. Sequence Diagram: Read All Nurses
 
 ```mermaid
 sequenceDiagram
@@ -256,6 +343,35 @@ sequenceDiagram
             Controller-->>Client: 200 OK (Nurses Array)
         end
     end
+```
+
+### 6.6. Application Logic Flowchart
+
+```mermaid
+flowchart TD
+    Start([Incoming HTTP Request]) --> RouteCheck{Registered Route?}
+    RouteCheck -- No --> R404[404 Route Not Found]
+    RouteCheck -- Yes --> EndpointSwitch{Endpoint Routing}
+
+    %% Branch /nurse/index
+    EndpointSwitch -- GET /nurse/index --> CheckFile1{File nurses.json exists?}
+    CheckFile1 -- No --> Err500_1[500: nurses.json not found]
+    CheckFile1 -- Yes --> Parse1{Valid JSON?}
+    Parse1 -- No --> Err500_2[500: nurses.json is not valid]
+    Parse1 -- Yes --> Resp200_All[200 OK: Total list of nurses]
+
+    %% Branch /nurse/name/{name}
+    EndpointSwitch -- GET /nurse/name/{name} --> LoadFile2[Load nurses.json]
+    LoadFile2 --> LoopSearch{Match strcasecmp?}
+    LoopSearch -- Yes --> Resp200_Nurse[200 OK: Nurse JSON object]
+    LoopSearch -- No --> Err404_Nurse[404 Not Found: Nurse not found]
+
+    %% Branch /nurse/login
+    EndpointSwitch -- POST /nurse/login --> CheckBody{Username and password provided?}
+    CheckBody -- No --> Err400[400 Bad Request: Username and password required]
+    CheckBody -- Yes --> MatchCreds{Credentials match?}
+    MatchCreds -- Yes --> Resp200_Log[200 OK: success true]
+    MatchCreds -- No --> Err401[401 Unauthorized: success false]
 ```
 
 ---

@@ -1,18 +1,27 @@
 # Nurse Simulator — Documentación General del Proyecto
 
 > **M0616 - Proyecto Intermodular | DAW 2 (Curso 2026/2027)**  
-> **Centro:** Stucom  
+> **Centro:** STUCOM Pelai (Barcelona)  
 > **Grupo:** pr03  
 > **Autores:** Ignacio Breñas Muñoz, Christopher Roger Tito Farez, Zehao Yin, Gorka Ramirez  
 > **Repositorio:** [https://github.com/Ignaciobrenas/Nurse-Simulator](https://github.com/Ignaciobrenas/Nurse-Simulator)
 
 ---
 
-## 1. Resumen Ejecutivo y Propósito
+## 1. Resumen Ejecutivo y Equipo
 
 **Nurse Simulator** es una API REST desarrollada con **Symfony 7.4** y **PHP 8.2+** cuyo objetivo es simular la gestión del personal de enfermería de un centro hospitalario. 
 
 El proyecto está planteado como un trabajo académico en equipo, concebido para evolucionar incrementalmente a lo largo de diversas fases de desarrollo. En esta primera fase, la API expone servicios web esenciales para la consulta, filtrado e inicio de sesión de enfermeros/as, operando con un sistema de almacenamiento desacoplado de bases de datos relacionales tradicionales.
+
+### Equipo de Desarrollo y Roles
+
+| Miembro | Rol | Responsabilidades |
+|---|---|---|
+| **Ignacio Breñas Muñoz** | **Project Manager & Tech Lead** | Organización global del equipo, creación de ramas individuales, reparto de issues en GitHub Projects, revisión de Pull Requests y aseguramiento de la estabilidad del proyecto. |
+| **Christopher Roger Tito Farez** | **Backend Developer** | Implementación del endpoint `GET /nurse/index` y capturas de prueba. |
+| **Zehao Yin** | **Backend Developer** | Implementación del endpoint `GET /nurse/name/{name}` y dataset de 1.000 enfermeros. |
+| **Gorka Ramirez** | **Backend Developer** | Implementación del endpoint `POST /nurse/login` y verificación de credenciales. |
 
 ---
 
@@ -184,9 +193,87 @@ curl -X POST http://localhost:8000/nurse/login \
 
 ---
 
-## 6. Diagramas de Secuencia y Arquitectura
+## 6. Esquemas de Arquitectura, UML y Diagramas de Flujo
 
-### 6.1. Diagrama de Secuencia: Búsqueda por Nombre
+### 6.1. Esquema de Integración Modular (Desarrollo Individual a Repositorio Grupal)
+
+Basado en las directrices de la práctica intermodular (`pr03_Introduccio_back_end`), cada desarrollador implementó su método de forma individual antes de la integración coordinada en el repositorio grupal:
+
+```mermaid
+graph TD
+    subgraph Desarrollos Individuales
+        M1["👤 Member 1 (Gorka)<br><b>NurseController</b><br>+login(user, pw): boolean"]
+        M2["👤 Member 2 (Roger)<br><b>NurseController</b><br>+getAll(): List&lt;Nurse&gt;"]
+        M3["👤 Member 3 (Zehao)<br><b>NurseController</b><br>+findByName(name): Nurse"]
+    end
+
+    subgraph Repositorio Grupal Centralizado
+        GC["👥 Grupo pr03 (Ignacio, Roger, Zehao, Gorka)<br><b>NurseController</b><br>─────────────────────────────<br>+getAll(): JsonResponse<br>+findByName(name: string): JsonResponse<br>+login(request: Request): JsonResponse"]
+    end
+
+    M1 -->|Pull Request #17| GC
+    M2 -->|Pull Request #16| GC
+    M3 -->|Pull Request #15| GC
+```
+
+### 6.2. Diagrama de Clases UML
+
+Representación de las clases y relaciones de la arquitectura de la aplicación en Symfony 7.4:
+
+```mermaid
+classDiagram
+    direction TB
+    class Kernel {
+        <<MicroKernelTrait>>
+        +boot()
+        +registerBundles()
+    }
+
+    class AbstractController {
+        <<Symfony Framework>>
+        +json(data, status, headers, context) JsonResponse
+        +getParameter(name) mixed
+    }
+
+    class NurseController {
+        +getAll() JsonResponse
+        +findByName(name: string) JsonResponse
+        +login(request: Request) JsonResponse
+    }
+
+    class JsonResponse {
+        <<Symfony HttpFoundation>>
+        +int statusCode
+        +string content
+    }
+
+    class Request {
+        <<Symfony HttpFoundation>>
+        +getContent() string
+    }
+
+    class NurseEntity {
+        <<Data Model>>
+        +int id
+        +string name
+        +string email
+        +string password
+    }
+
+    class NursesStorage {
+        <<JSON File: data/nurses.json>>
+        +1000 items
+    }
+
+    AbstractController <|-- NurseController
+    NurseController ..> Request : recibe
+    NurseController ..> JsonResponse : retorna
+    NurseController ..> NursesStorage : lee y decodifica
+    NursesStorage "1" *-- "1000" NurseEntity : almacena
+    Kernel ..> NurseController : enruta peticiones
+```
+
+### 6.3. Diagrama de Secuencia: Búsqueda por Nombre
 
 ```mermaid
 sequenceDiagram
@@ -209,7 +296,7 @@ sequenceDiagram
     end
 ```
 
-### 6.2. Diagrama de Secuencia: Login de Enfermero
+### 6.4. Diagrama de Secuencia: Login de Enfermero
 
 ```mermaid
 sequenceDiagram
@@ -236,7 +323,7 @@ sequenceDiagram
     end
 ```
 
-### 6.3. Diagrama de Secuencia: Listar Todos
+### 6.5. Diagrama de Secuencia: Listar Todos
 
 ```mermaid
 sequenceDiagram
@@ -256,6 +343,35 @@ sequenceDiagram
             Controller-->>Cliente: 200 OK (Array de enfermeros)
         end
     end
+```
+
+### 6.6. Diagrama de Flujo Lógico de la Aplicación
+
+```mermaid
+flowchart TD
+    Start([Petición HTTP entrante]) --> RouteCheck{¿Ruta registrada?}
+    RouteCheck -- No --> R404[404 Route Not Found]
+    RouteCheck -- Sí --> EndpointSwitch{Selección de Endpoint}
+
+    %% Rama /nurse/index
+    EndpointSwitch -- GET /nurse/index --> CheckFile1{¿Existe nurses.json?}
+    CheckFile1 -- No --> Err500_1[500: nurses.json not found]
+    CheckFile1 -- Sí --> Parse1{¿JSON parseable?}
+    Parse1 -- No --> Err500_2[500: nurses.json is not valid]
+    Parse1 -- Sí --> Resp200_All[200 OK: Lista total de enfermeros]
+
+    %% Rama /nurse/name/{name}
+    EndpointSwitch -- GET /nurse/name/{name} --> LoadFile2[Cargar nurses.json]
+    LoadFile2 --> LoopSearch{¿Coincide strcasecmp?}
+    LoopSearch -- Sí --> Resp200_Nurse[200 OK: Objeto del enfermero]
+    LoopSearch -- No --> Err404_Nurse[404 Not Found: Nurse not found]
+
+    %% Rama /nurse/login
+    EndpointSwitch -- POST /nurse/login --> CheckBody{¿Vienen username y password?}
+    CheckBody -- No --> Err400[400 Bad Request: Username and password required]
+    CheckBody -- Sí --> MatchCreds{¿Coinciden credenciales?}
+    MatchCreds -- Sí --> Resp200_Log[200 OK: success true]
+    MatchCreds -- No --> Err401[401 Unauthorized: success false]
 ```
 
 ---
