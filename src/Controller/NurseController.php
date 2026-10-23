@@ -24,19 +24,11 @@ class NurseController extends AbstractController
     }
 
     #[Route('/nurse/index', name: 'nurse_index', methods: ['GET'])]
-    public function getAll(): JsonResponse
+    public function getAll(NurseRepository $nurseRepository): JsonResponse
     {
-        $file = $this->getParameter('kernel.project_dir') . '/data/nurses.json';
 
-        if (!is_file($file)) {
-            return $this->json(['error' => 'nurses.json not found'], Response::HTTP_INTERNAL_SERVER_ERROR);
-        }
-
-        $nurses = json_decode(file_get_contents($file), true);
-
-        if (!is_array($nurses)) {
-            return $this->json(['error' => 'nurses.json is not valid'], Response::HTTP_INTERNAL_SERVER_ERROR);
-        }
+        //utilizando la Funcion de doctrine findAll()
+        $nurses = $nurseRepository->findAll() ;
 
         return $this->json($nurses);
     }
