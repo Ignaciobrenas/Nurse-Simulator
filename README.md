@@ -1,9 +1,10 @@
-<div align="center">
+﻿<div align="center">
 
 # 🏥 Nurse Simulator
 
 [![Symfony](https://img.shields.io/badge/Symfony-7.4-000000?style=for-the-badge&logo=symfony&logoColor=white)](https://symfony.com/)
 [![PHP](https://img.shields.io/badge/PHP-8.2+-777BB4?style=for-the-badge&logo=php&logoColor=white)](https://www.php.net/)
+[![Supabase](https://img.shields.io/badge/Supabase-Database-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com/)
 [![STUCOM](https://img.shields.io/badge/STUCOM-Pelai%20(Barcelona)-E2001A?style=for-the-badge)](https://www.stucom.com/)
 [![Course](https://img.shields.io/badge/DAW%202-2026%2F27-4B0082?style=for-the-badge)](#)
 [![License](https://img.shields.io/badge/License-MIT-blue.style=for-the-badge)](LICENSE)
@@ -116,14 +117,14 @@ classDiagram
     }
 
     class NursesStorage {
-        <<JSON File: data/nurses.json>>
+        <<Supabase: tabla nurses>>
         +1000 items
     }
 
     AbstractController <|-- NurseController
     NurseController ..> Request : recibe
     NurseController ..> JsonResponse : retorna
-    NurseController ..> NursesStorage : lee y decodifica
+    NurseController ..> NursesStorage : consulta ví­a Doctrine ORM
     NursesStorage "1" *-- "1000" NurseEntity : almacena
     Kernel ..> NurseController : enruta peticiones
 ```
@@ -327,8 +328,10 @@ gitGraph
 ## 🚀 7. Instalación y Ejecución Rápida
 
 ### Requisitos Previos
-* **PHP >= 8.2** con extensiones comunes (`json`, `mbstring`, `ctype`).
+* **PHP >= 8.2** con extensiones comunes (`json`, `mbstring`, `ctype`, `pdo_pgsql`).
 * **Composer** (v2 o superior).
+* **Cuenta y proyecto en [Supabase](https://supabase.com/)** con la tabla 
+urses configurada.
 * *(Opcional)* **Symfony CLI**.
 
 ### Puesta en Marcha
@@ -341,7 +344,7 @@ cd Nurse-Simulator
 # 2. Instalar dependencias de Symfony
 composer install
 
-# 3. Configurar entorno local
+# 3. Configurar entorno local (incluye DATABASE_URL de Supabase)
 cp .env.example .env
 
 # 4. Iniciar el servidor de desarrollo

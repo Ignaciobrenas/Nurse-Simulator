@@ -1,4 +1,4 @@
-# Nurse Simulator — Comprehensive Project Documentation
+﻿# Nurse Simulator — Comprehensive Project Documentation
 
 > **M0616 - Intermodular Project | DAW 2 (Academic Year 2026/2027)**  
 > **Institution:** STUCOM Pelai (Barcelona)  
@@ -34,7 +34,7 @@ In the current development phase, the application does not rely on a relational 
 
 ### Nurse Entity Schema
 
-Each record in [`data/nurses.json`](file:///C:/Users/Ignacio/Desktop/Nurse-Simulator/data/nurses.json) contains the following fields:
+Each row in the `nurses` table on Supabase contains the following fields:
 
 | Field | Data Type | Description |
 |---|---|---|
@@ -104,10 +104,10 @@ flowchart LR
 * **Implementation:** `GET /nurse/name/{name}` endpoint inside [`NurseController`](file:///C:/Users/Ignacio/Desktop/Nurse-Simulator/src/Controller/NurseController.php).
 * **Logic:**
   1. Extracts `{name}` from the route parameters.
-  2. Iterates over the records, comparing names case-insensitively (`strcasecmp`).
+  2. Queries the `nurses` table on Supabase via Doctrine ORM, filtering by name (case-insensitive).
   3. Returns HTTP 200 with the matching nurse object if found.
   4. Returns HTTP 404 with `{"error": "Nurse not found"}` if no matching record exists.
-  5. Expanded the mock dataset to 1,000 nurses in this phase to stress-test retrieval.
+  5. Mock data was migrated from the JSON file into the Supabase database.
 
 ---
 
@@ -261,14 +261,14 @@ classDiagram
     }
 
     class NursesStorage {
-        <<JSON File: data/nurses.json>>
+        <<Supabase: nurses table>>
         +1000 items
     }
 
     AbstractController <|-- NurseController
     NurseController ..> Request : receives
     NurseController ..> JsonResponse : returns
-    NurseController ..> NursesStorage : reads and decodes
+    NurseController ..> NursesStorage : queries via Doctrine ORM
     NursesStorage "1" *-- "1000" NurseEntity : stores
     Kernel ..> NurseController : routes requests
 ```
@@ -280,15 +280,12 @@ sequenceDiagram
     actor Client as HTTP Client
     participant Kernel as Symfony Kernel
     participant Controller as NurseController
-    participant JSON as data/nurses.json
+    participant JSON as Supabase (nurses table)
 
     Client->>Kernel: GET /nurse/name/{name}
     Kernel->>Controller: findByName(name)
-    Controller->>JSON: file_get_contents + json_decode
+    Controller->>JSON: Doctrine ORM query (findByName)
     JSON-->>Controller: Nurses list
-    loop Search match
-        Controller->>Controller: strcasecmp(nurse.name, name)
-    end
     alt Nurse found
         Controller-->>Client: 200 OK (Nurse JSON object)
     else Not found
@@ -303,14 +300,14 @@ sequenceDiagram
     actor Client as HTTP Client
     participant Kernel as Symfony Kernel
     participant Controller as NurseController
-    participant JSON as data/nurses.json
+    participant JSON as Supabase (nurses table)
 
     Client->>Kernel: POST /nurse/login (username, password)
     Kernel->>Controller: login(Request)
     alt Missing username or password
         Controller-->>Client: 400 Bad Request
     else Payload valid
-        Controller->>JSON: Read file contents
+        Controller->>JSON: Doctrine ORM query (findAll)
         JSON-->>Controller: Nurses list
         loop Credential check
             Controller->>Controller: Verify email/name and password
@@ -329,20 +326,12 @@ sequenceDiagram
 sequenceDiagram
     actor Client as HTTP Client
     participant Controller as NurseController
-    participant JSON as data/nurses.json
+    participant JSON as Supabase (nurses table)
 
     Client->>Controller: GET /nurse/index
-    Controller->>JSON: is_file(data/nurses.json)?
-    alt File missing
-        Controller-->>Client: 500 Internal Server Error {"error": "nurses.json not found"}
-    else File exists
-        Controller->>JSON: json_decode(file_get_contents())
-        alt JSON parsing error
-            Controller-->>Client: 500 Internal Server Error {"error": "nurses.json is not valid"}
-        else Valid JSON
-            Controller-->>Client: 200 OK (Nurses Array)
-        end
-    end
+    Controller->>JSON: Doctrine ORM query (findAll)
+    JSON-->>Controller: Nurses array
+    Controller-->>Client: 200 OK (Nurses Array)
 ```
 
 ### 6.6. Application Logic Flowchart
@@ -428,8 +417,10 @@ Nurse-Simulator/
 ## 9. Installation & Local Execution
 
 ### Prerequisites
-* **PHP** >= 8.2 (with `mbstring`, `json`, `ctype`, etc.)
+* **PHP** >= 8.2 (with `mbstring`, `json`, `ctype`, `pdo_pgsql`, etc.)
 * **Composer** >= 2.0
+* **A [Supabase](https://supabase.com/) account and project** with the 
+urses table set up
 * *(Optional)* **Symfony CLI**
 
 ### Setup Instructions
@@ -474,5 +465,5 @@ The following architectural enhancements are scheduled for upcoming phases:
 1. **Persistence & Repository Layer:** Decouple file reading from the controller into a dedicated `NurseRepository` service.
 2. **Entities & DTOs:** Introduce strongly-typed models with validation constraints (Symfony Validator).
 3. **Security & Hashing:** Implement secure password hashing via `PasswordHasherInterface` and modern authentication (JWT / sessions).
-4. **Relational Database:** Migrate storage from JSON to SQL using **Doctrine ORM** (MySQL / PostgreSQL / SQLite) with automated migrations.
+4. **Relational Database:** âœ… Completed â€” the API now uses **Supabase (PostgreSQL)** as a remote database, managed through **Doctrine ORM** and migrations.
 5. **Automated Testing:** Integrate unit and end-to-end integration test suites with PHPUnit and Symfony's `WebTestCase`.

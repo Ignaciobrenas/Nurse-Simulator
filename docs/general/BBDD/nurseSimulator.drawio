@@ -1,0 +1,154 @@
+<mxfile host="app.diagrams.net" agent="Gemini">
+  <diagram id="ER_Conceptual_Hospital" name="Modelo Conceptual">
+    <mxGraphModel dx="1159" dy="746" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="ent_enfermero" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=14;" value="ENFERMERO" vertex="1">
+          <mxGeometry height="60" width="140" x="480" y="200" as="geometry" />
+        </mxCell>
+        <mxCell id="attr_enfermero" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" value="&lt;u&gt;id_enfermero&lt;/u&gt;" vertex="1">
+          <mxGeometry height="50" width="110" x="660" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_attr_enf" edge="1" parent="1" source="ent_enfermero" style="endArrow=none;html=1;rounded=0;" target="attr_enfermero">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ent_turno" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;fontSize=14;" value="TURNO" vertex="1">
+          <mxGeometry height="60" width="140" x="120" y="200" as="geometry" />
+        </mxCell>
+        <mxCell id="attr_turno" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;" value="&lt;u&gt;id_turno&lt;/u&gt;" vertex="1">
+          <mxGeometry height="50" width="110" x="135" y="100" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_attr_tur" edge="1" parent="1" source="ent_turno" style="endArrow=none;html=1;rounded=0;" target="attr_turno">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ent_paciente" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontStyle=1;fontSize=14;" value="PACIENTE" vertex="1">
+          <mxGeometry height="60" width="140" x="480" y="520" as="geometry" />
+        </mxCell>
+        <mxCell id="attr_paciente" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;" value="&lt;u&gt;id_paciente&lt;/u&gt;" vertex="1">
+          <mxGeometry height="50" width="110" x="660" y="590" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_attr_pac" edge="1" parent="1" source="ent_paciente" style="endArrow=none;html=1;rounded=0;" target="attr_paciente">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ent_cama" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=14;" value="CAMA" vertex="1">
+          <mxGeometry height="60" width="140" x="120" y="450" as="geometry" />
+        </mxCell>
+        <mxCell id="attr_cama" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;" value="&lt;u&gt;id_cama&lt;/u&gt;" vertex="1">
+          <mxGeometry height="50" width="110" x="135" y="360" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_attr_cam" edge="1" parent="1" source="ent_cama" style="endArrow=none;html=1;rounded=0;" target="attr_cama">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ent_historial" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;fontSize=13;" value="HISTORIAL_CLINICO" vertex="1">
+          <mxGeometry height="60" width="150" x="120" y="610" as="geometry" />
+        </mxCell>
+        <mxCell id="attr_historial" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;" value="&lt;u&gt;id_historial&lt;/u&gt;" vertex="1">
+          <mxGeometry height="50" width="110" x="140" y="710" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_attr_his" edge="1" parent="1" source="ent_historial" style="endArrow=none;html=1;rounded=0;" target="attr_historial">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ent_evolucion" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;fontSize=14;" value="EVOLUCION" vertex="1">
+          <mxGeometry height="60" width="140" x="860" y="360" as="geometry" />
+        </mxCell>
+        <mxCell id="attr_evolucion" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" value="&lt;u&gt;id_evolucion&lt;/u&gt;" vertex="1">
+          <mxGeometry height="50" width="110" x="1030" y="365" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_attr_evo" edge="1" parent="1" source="ent_evolucion" style="endArrow=none;html=1;rounded=0;" target="attr_evolucion">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ent_concepto" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#b0e3e6;strokeColor=#0e8088;fontStyle=1;fontSize=14;" value="CONCEPTO" vertex="1">
+          <mxGeometry height="60" width="140" x="860" y="640" as="geometry" />
+        </mxCell>
+        <mxCell id="attr_concepto" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#b0e3e6;strokeColor=#0e8088;fontSize=12;" value="&lt;u&gt;id_concepto&lt;/u&gt;" vertex="1">
+          <mxGeometry height="50" width="110" x="1030" y="645" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_attr_con" edge="1" parent="1" source="ent_concepto" style="endArrow=none;html=1;rounded=0;" target="attr_concepto">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ent_toma" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fad9d5;strokeColor=#ae4132;fontStyle=1;fontSize=13;" value="TOMA_MEDICACION" vertex="1">
+          <mxGeometry height="60" width="150" x="475" y="360" as="geometry" />
+        </mxCell>
+        <mxCell id="attr_toma" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fad9d5;strokeColor=#ae4132;fontSize=12;" value="&lt;u&gt;id_toma&lt;/u&gt;" vertex="1">
+          <mxGeometry height="50" width="110" x="320" y="360" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_attr_tom" edge="1" parent="1" source="ent_toma" style="endArrow=none;html=1;rounded=0;" target="attr_toma">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel_realiza" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1;" value="REALIZA" vertex="1">
+          <mxGeometry height="60" width="100" x="320" y="200" as="geometry" />
+        </mxCell>
+        <mxCell id="e_enf_rea" edge="1" parent="1" source="ent_enfermero" style="endArrow=none;html=1;rounded=0;fontStyle=1;labelBackgroundColor=#ffffff;" target="rel_realiza" value="1..N">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_rea_tur" edge="1" parent="1" source="rel_realiza" style="endArrow=none;html=1;rounded=0;fontStyle=1;labelBackgroundColor=#ffffff;" target="ent_turno" value="1..N">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel_ocupa" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1;" value="OCUPA" vertex="1">
+          <mxGeometry height="60" width="100" x="320" y="450" as="geometry" />
+        </mxCell>
+        <mxCell id="e_pac_ocu" edge="1" parent="1" source="ent_paciente" style="endArrow=none;html=1;rounded=0;fontStyle=1;labelBackgroundColor=#ffffff;" target="rel_ocupa" value="0..1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_ocu_cam" edge="1" parent="1" source="rel_ocupa" style="endArrow=none;html=1;rounded=0;fontStyle=1;labelBackgroundColor=#ffffff;" target="ent_cama" value="0..1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel_tiene" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1;" value="TIENE" vertex="1">
+          <mxGeometry height="60" width="100" x="320" y="610" as="geometry" />
+        </mxCell>
+        <mxCell id="e_pac_tie" edge="1" parent="1" source="ent_paciente" style="endArrow=none;html=1;rounded=0;fontStyle=1;labelBackgroundColor=#ffffff;" target="rel_tiene" value="1..1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_tie_his" edge="1" parent="1" source="rel_tiene" style="endArrow=none;html=1;rounded=0;fontStyle=1;labelBackgroundColor=#ffffff;" target="ent_historial" value="1..1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel_administra" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1;" value="ADMINISTRA" vertex="1">
+          <mxGeometry height="55" width="100" x="500" y="280" as="geometry" />
+        </mxCell>
+        <mxCell id="e_enf_adm" edge="1" parent="1" source="ent_enfermero" style="endArrow=none;html=1;rounded=0;fontStyle=1;labelBackgroundColor=#ffffff;" target="rel_administra" value="1..1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_adm_tom" edge="1" parent="1" source="rel_administra" style="endArrow=none;html=1;rounded=0;fontStyle=1;labelBackgroundColor=#ffffff;" target="ent_toma" value="0..N">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel_recibe" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1;" value="RECIBE" vertex="1">
+          <mxGeometry height="55" width="100" x="500" y="440" as="geometry" />
+        </mxCell>
+        <mxCell id="e_pac_rec" edge="1" parent="1" source="ent_paciente" style="endArrow=none;html=1;rounded=0;fontStyle=1;labelBackgroundColor=#ffffff;" target="rel_recibe" value="1..1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_rec_tom" edge="1" parent="1" source="rel_recibe" style="endArrow=none;html=1;rounded=0;fontStyle=1;labelBackgroundColor=#ffffff;" target="ent_toma" value="0..N">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel_registra" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1;" value="REGISTRA" vertex="1">
+          <mxGeometry height="60" width="100" x="710" y="240" as="geometry" />
+        </mxCell>
+        <mxCell id="e_enf_reg" edge="1" parent="1" source="ent_enfermero" style="endArrow=none;html=1;rounded=0;fontStyle=1;labelBackgroundColor=#ffffff;" target="rel_registra" value="1..1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_reg_evo" edge="1" parent="1" source="rel_registra" style="endArrow=none;html=1;rounded=0;fontStyle=1;labelBackgroundColor=#ffffff;" target="ent_evolucion" value="0..N">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel_presenta" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1;" value="PRESENTA" vertex="1">
+          <mxGeometry height="60" width="100" x="710" y="470" as="geometry" />
+        </mxCell>
+        <mxCell id="e_pac_pre" edge="1" parent="1" source="ent_paciente" style="endArrow=none;html=1;rounded=0;fontStyle=1;labelBackgroundColor=#ffffff;" target="rel_presenta" value="1..1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_pre_evo" edge="1" parent="1" source="rel_presenta" style="endArrow=none;html=1;rounded=0;fontStyle=1;labelBackgroundColor=#ffffff;" target="ent_evolucion" value="0..N">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel_mide" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1;" value="SE MIDE EN" vertex="1">
+          <mxGeometry height="60" width="100" x="880" y="500" as="geometry" />
+        </mxCell>
+        <mxCell id="e_con_mid" edge="1" parent="1" source="ent_concepto" style="endArrow=none;html=1;rounded=0;fontStyle=1;labelBackgroundColor=#ffffff;" target="rel_mide" value="1..1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_mid_evo" edge="1" parent="1" source="rel_mide" style="endArrow=none;html=1;rounded=0;fontStyle=1;labelBackgroundColor=#ffffff;" target="ent_evolucion" value="0..N">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
