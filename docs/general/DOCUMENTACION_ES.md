@@ -1,4 +1,4 @@
-# Nurse Simulator — Documentación General del Proyecto
+﻿# Nurse Simulator — Documentación General del Proyecto
 
 > **M0616 - Proyecto Intermodular | DAW 2 (Curso 2026/2027)**  
 > **Centro:** STUCOM Pelai (Barcelona)  
@@ -34,7 +34,7 @@ En la fase actual, la aplicación no hace uso de una base de datos relacional (c
 
 ### Estructura de la Entidad Nurse
 
-Cada registro en [`data/nurses.json`](file:///C:/Users/Ignacio/Desktop/Nurse-Simulator/data/nurses.json) cuenta con la siguiente estructura de datos:
+Cada fila en la tabla `nurses` de Supabase cuenta con la siguiente estructura:
 
 | Campo | Tipo de dato | Descripción |
 |---|---|---|
@@ -261,14 +261,14 @@ classDiagram
     }
 
     class NursesStorage {
-        <<JSON File: data/nurses.json>>
+        <<Supabase: tabla nurses>>
         +1000 items
     }
 
     AbstractController <|-- NurseController
     NurseController ..> Request : recibe
     NurseController ..> JsonResponse : retorna
-    NurseController ..> NursesStorage : lee y decodifica
+    NurseController ..> NursesStorage : consulta vi­a Doctrine ORM
     NursesStorage "1" *-- "1000" NurseEntity : almacena
     Kernel ..> NurseController : enruta peticiones
 ```
@@ -280,7 +280,7 @@ sequenceDiagram
     actor Cliente as Cliente HTTP
     participant Kernel as Symfony Kernel
     participant Controller as NurseController
-    participant JSON as data/nurses.json
+    participant JSON as Supabase (tabla nurses)
 
     Cliente->>Kernel: GET /nurse/name/{name}
     Kernel->>Controller: findByName(name)
@@ -303,7 +303,7 @@ sequenceDiagram
     actor Cliente as Cliente HTTP
     participant Kernel as Symfony Kernel
     participant Controller as NurseController
-    participant JSON as data/nurses.json
+    participant JSON as Supabase (tabla nurses)
 
     Cliente->>Kernel: POST /nurse/login (username, password)
     Kernel->>Controller: login(Request)
@@ -329,7 +329,7 @@ sequenceDiagram
 sequenceDiagram
     actor Cliente as Cliente HTTP
     participant Controller as NurseController
-    participant JSON as data/nurses.json
+    participant JSON as Supabase (tabla nurses)
 
     Cliente->>Controller: GET /nurse/index
     Controller->>JSON: ¿is_file(data/nurses.json)?
@@ -428,8 +428,10 @@ Nurse-Simulator/
 ## 9. Instalación y Guía de Uso Local
 
 ### Prerrequisitos
-* **PHP** >= 8.2 (con extensiones `mbstring`, `json`, `ctype`, etc.)
+* **PHP** >= 8.2 (con extensiones `mbstring`, `json`, `ctype`, `pdo_pgsql`, etc.)
 * **Composer** >= 2.0
+* **Cuenta y proyecto en [Supabase](https://supabase.com/)** con la tabla 
+urses configurada
 * *(Opcional)* **Symfony CLI**
 
 ### Pasos de Instalación
