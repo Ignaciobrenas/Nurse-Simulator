@@ -109,6 +109,19 @@ flowchart LR
   4. Returns HTTP 404 with `{"error": "Nurse not found"}` if no matching record exists.
   5. Mock data was migrated from the JSON file into the Supabase database.
 
+### 4.5. Read Nurse By ID
+* **Branch:** `55-implement-read-nurse-by-id-endpoint-get-nurseid`
+* **Implementation:** `GET /nurse/{id}` endpoint in `NurseController::getById`, using `NurseRepository::find()`.
+* **Logic:**
+  1. Validates that `{id}` is a positive integer (`filter_var` with `min_range: 1`); otherwise HTTP 400.
+  2. Looks the record up with `NurseRepository::find($id)`; if missing, HTTP 404.
+  3. Returns the nurse with HTTP 200 **excluding the `password` field**.
+  4. Doctrine (DBAL/ORM) exceptions are caught and returned as a JSON HTTP 500.
+* **Technical decisions:**
+  * The route has no `requirements: ['id' => '\d+']`: with it, `/nurse/abc` would yield a router 404 instead of the required 400.
+  * `server_version` was set in `config/packages/doctrine.yaml` so Doctrine does not connect to the DB when building the repository; a connection failure is thus caught inside the controller.
+* **Tests:** PHPUnit in `tests/Controller/NurseControllerGetByIdTest.php` (200, 400, 404, 500). Screenshots in `docs/postman/readById/`.
+
 ---
 
 ## 5. API Specification & Endpoints
@@ -119,6 +132,7 @@ flowchart LR
 |---|---|---|---|
 | `GET` | `/nurse/index` | None | `200 OK`: Array of all nurses<br>`500 Internal Server Error`: Missing file or corrupt JSON |
 | `GET` | `/nurse/name/{name}` | Path param: `name` (string) | `200 OK`: Nurse object<br>`404 Not Found`: `{ "error": "Nurse not found" }` |
+| `GET` | `/nurse/{id}` | Path param: `id` (integer > 0) | `200 OK`: Nurse without `password`<br>`400 Bad Request`: invalid `id`<br>`404 Not Found`: `{ "error": "Nurse not found" }`<br>`500 Internal Server Error`: DB failure |
 | `POST` | `/nurse/login` | JSON Body: `username`, `password` | `200 OK`: `{ "success": true }`<br>`400 Bad Request`: Missing credentials<br>`401 Unauthorized`: `{ "success": false }` |
 
 ### Request and Response Examples
@@ -164,6 +178,20 @@ curl -X GET http://localhost:8000/nurse/name/Ana
   "error": "Nurse not found"
 }
 ```
+
+#### 2b. Search by ID
+```bash
+curl -X GET http://localhost:8000/nurse/1000
+```
+**Response (HTTP 200):**
+```json
+{
+  "id": 1000,
+  "name": "Andrea Alvarez",
+  "email": "andrea.alvarez@hospital.com"
+}
+```
+**Errors:** `/nurse/1a` → HTTP 400 `{"error": "Invalid id: must be a positive integer"}`; `/nurse/99999` → HTTP 404 `{"error": "Nurse not found"}`.
 
 #### 3. Nurse login
 ```bash
