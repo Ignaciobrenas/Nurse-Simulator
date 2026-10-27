@@ -1,369 +1,425 @@
 {
     "info": {
         "name": "Update",
-        "description": "PUT /nurse/{id}: run 200 before 204. For 500, stop the database before sending the request.",
+        "description": "PUT /nurse/{id}. The \"Update\" folder runs unattended (newman --folder Update): run it in order, 200 before 204, and the last request restores nurse 1. The \"Manual - DB down\" folder needs the database stopped to get a 500.",
         "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
     },
     "item": [
         {
-            "name": "Update (OK 200)",
-            "event": [
+            "name": "Update",
+            "item": [
                 {
-                    "listen": "test",
-                    "script": {
-                        "type": "text/javascript",
-                        "exec": [
-                            "pm.test(\"Status code is 200\", function () {",
-                            "    pm.response.to.have.status(200);",
-                            "});"
-                        ]
-                    }
-                }
-            ],
-            "request": {
-                "method": "PUT",
-                "header": [
-                    {
-                        "key": "Content-Type",
-                        "value": "application/json"
-                    }
-                ],
-                "body": {
-                    "mode": "raw",
-                    "raw": "{\n  \"name\": \"Ana Updated\",\n  \"email\": \"ana.updated@hospital.com\"\n}",
-                    "options": {
-                        "raw": {
-                            "language": "json"
+                    "name": "Update (OK 200)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test(\"Status code is 200\", function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});"
+                                ]
+                            }
                         }
-                    }
-                },
-                "url": {
-                    "raw": "{{baseUrl}}/nurse/1",
-                    "host": [
-                        "{{baseUrl}}"
                     ],
-                    "path": [
-                        "nurse",
-                        "1"
-                    ]
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Ana Updated\",\n  \"email\": \"ana.updated@hospital.com\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/nurse/1",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "nurse",
+                                "1"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "No Changes (204)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test(\"Status code is 204\", function () {",
+                                    "    pm.response.to.have.status(204);",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Ana Updated\",\n  \"email\": \"ana.updated@hospital.com\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/nurse/1",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "nurse",
+                                "1"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Bad Request (400)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test(\"Status code is 400\", function () {",
+                                    "    pm.response.to.have.status(400);",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Ana\",",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/nurse/1",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "nurse",
+                                "1"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Invalid Id (400)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test(\"Status code is 400\", function () {",
+                                    "    pm.response.to.have.status(400);",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Ana\",\n  \"email\": \"ana@hospital.com\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/nurse/1a",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "nurse",
+                                "1a"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Not Found (Error 404)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test(\"Status code is 404\", function () {",
+                                    "    pm.response.to.have.status(404);",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Ana\",\n  \"email\": \"ana@hospital.com\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/nurse/99999",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "nurse",
+                                "99999"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Conflict (Error 409)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test(\"Status code is 409\", function () {",
+                                    "    pm.response.to.have.status(409);",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Ana\",\n  \"email\": \"carlos@hospital.com\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/nurse/1",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "nurse",
+                                "1"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Unprocessable Content (Error 422)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test(\"Status code is 422\", function () {",
+                                    "    pm.response.to.have.status(422);",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Ana\",\n  \"email\": \"not-an-email\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/nurse/1",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "nurse",
+                                "1"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Restore Nurse (OK 200)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test(\"Status code is 200\", function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Ana\",\n  \"email\": \"ana@hospital.com\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/nurse/1",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "nurse",
+                                "1"
+                            ]
+                        }
+                    },
+                    "response": []
                 }
-            },
-            "response": []
+            ]
         },
         {
-            "name": "No Changes (204)",
-            "event": [
+            "name": "Manual - DB down",
+            "description": "Stop the database before sending this request.",
+            "item": [
                 {
-                    "listen": "test",
-                    "script": {
-                        "type": "text/javascript",
-                        "exec": [
-                            "pm.test(\"Status code is 204\", function () {",
-                            "    pm.response.to.have.status(204);",
-                            "});"
-                        ]
-                    }
-                }
-            ],
-            "request": {
-                "method": "PUT",
-                "header": [
-                    {
-                        "key": "Content-Type",
-                        "value": "application/json"
-                    }
-                ],
-                "body": {
-                    "mode": "raw",
-                    "raw": "{\n  \"name\": \"Ana Updated\",\n  \"email\": \"ana.updated@hospital.com\"\n}",
-                    "options": {
-                        "raw": {
-                            "language": "json"
+                    "name": "ServerDown (Error 500)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test(\"Status code is 500\", function () {",
+                                    "    pm.response.to.have.status(500);",
+                                    "});"
+                                ]
+                            }
                         }
-                    }
-                },
-                "url": {
-                    "raw": "{{baseUrl}}/nurse/1",
-                    "host": [
-                        "{{baseUrl}}"
                     ],
-                    "path": [
-                        "nurse",
-                        "1"
-                    ]
-                }
-            },
-            "response": []
-        },
-        {
-            "name": "Bad Request (400)",
-            "event": [
-                {
-                    "listen": "test",
-                    "script": {
-                        "type": "text/javascript",
-                        "exec": [
-                            "pm.test(\"Status code is 400\", function () {",
-                            "    pm.response.to.have.status(400);",
-                            "});"
-                        ]
-                    }
-                }
-            ],
-            "request": {
-                "method": "PUT",
-                "header": [
-                    {
-                        "key": "Content-Type",
-                        "value": "application/json"
-                    }
-                ],
-                "body": {
-                    "mode": "raw",
-                    "raw": "{\n  \"name\": \"Ana\",",
-                    "options": {
-                        "raw": {
-                            "language": "json"
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Ana\",\n  \"email\": \"ana@hospital.com\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/nurse/1",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "nurse",
+                                "1"
+                            ]
                         }
-                    }
-                },
-                "url": {
-                    "raw": "{{baseUrl}}/nurse/1",
-                    "host": [
-                        "{{baseUrl}}"
-                    ],
-                    "path": [
-                        "nurse",
-                        "1"
-                    ]
+                    },
+                    "response": []
                 }
-            },
-            "response": []
-        },
-        {
-            "name": "Invalid Id (400)",
-            "event": [
-                {
-                    "listen": "test",
-                    "script": {
-                        "type": "text/javascript",
-                        "exec": [
-                            "pm.test(\"Status code is 400\", function () {",
-                            "    pm.response.to.have.status(400);",
-                            "});"
-                        ]
-                    }
-                }
-            ],
-            "request": {
-                "method": "PUT",
-                "header": [
-                    {
-                        "key": "Content-Type",
-                        "value": "application/json"
-                    }
-                ],
-                "body": {
-                    "mode": "raw",
-                    "raw": "{\n  \"name\": \"Ana\",\n  \"email\": \"ana@hospital.com\"\n}",
-                    "options": {
-                        "raw": {
-                            "language": "json"
-                        }
-                    }
-                },
-                "url": {
-                    "raw": "{{baseUrl}}/nurse/1a",
-                    "host": [
-                        "{{baseUrl}}"
-                    ],
-                    "path": [
-                        "nurse",
-                        "1a"
-                    ]
-                }
-            },
-            "response": []
-        },
-        {
-            "name": "Not Found (Error 404)",
-            "event": [
-                {
-                    "listen": "test",
-                    "script": {
-                        "type": "text/javascript",
-                        "exec": [
-                            "pm.test(\"Status code is 404\", function () {",
-                            "    pm.response.to.have.status(404);",
-                            "});"
-                        ]
-                    }
-                }
-            ],
-            "request": {
-                "method": "PUT",
-                "header": [
-                    {
-                        "key": "Content-Type",
-                        "value": "application/json"
-                    }
-                ],
-                "body": {
-                    "mode": "raw",
-                    "raw": "{\n  \"name\": \"Ana\",\n  \"email\": \"ana@hospital.com\"\n}",
-                    "options": {
-                        "raw": {
-                            "language": "json"
-                        }
-                    }
-                },
-                "url": {
-                    "raw": "{{baseUrl}}/nurse/99999",
-                    "host": [
-                        "{{baseUrl}}"
-                    ],
-                    "path": [
-                        "nurse",
-                        "99999"
-                    ]
-                }
-            },
-            "response": []
-        },
-        {
-            "name": "Conflict (Error 409)",
-            "event": [
-                {
-                    "listen": "test",
-                    "script": {
-                        "type": "text/javascript",
-                        "exec": [
-                            "pm.test(\"Status code is 409\", function () {",
-                            "    pm.response.to.have.status(409);",
-                            "});"
-                        ]
-                    }
-                }
-            ],
-            "request": {
-                "method": "PUT",
-                "header": [
-                    {
-                        "key": "Content-Type",
-                        "value": "application/json"
-                    }
-                ],
-                "body": {
-                    "mode": "raw",
-                    "raw": "{\n  \"name\": \"Ana\",\n  \"email\": \"carlos@hospital.com\"\n}",
-                    "options": {
-                        "raw": {
-                            "language": "json"
-                        }
-                    }
-                },
-                "url": {
-                    "raw": "{{baseUrl}}/nurse/1",
-                    "host": [
-                        "{{baseUrl}}"
-                    ],
-                    "path": [
-                        "nurse",
-                        "1"
-                    ]
-                }
-            },
-            "response": []
-        },
-        {
-            "name": "Unprocessable Content (Error 422)",
-            "event": [
-                {
-                    "listen": "test",
-                    "script": {
-                        "type": "text/javascript",
-                        "exec": [
-                            "pm.test(\"Status code is 422\", function () {",
-                            "    pm.response.to.have.status(422);",
-                            "});"
-                        ]
-                    }
-                }
-            ],
-            "request": {
-                "method": "PUT",
-                "header": [
-                    {
-                        "key": "Content-Type",
-                        "value": "application/json"
-                    }
-                ],
-                "body": {
-                    "mode": "raw",
-                    "raw": "{\n  \"name\": \"Ana\",\n  \"email\": \"not-an-email\"\n}",
-                    "options": {
-                        "raw": {
-                            "language": "json"
-                        }
-                    }
-                },
-                "url": {
-                    "raw": "{{baseUrl}}/nurse/1",
-                    "host": [
-                        "{{baseUrl}}"
-                    ],
-                    "path": [
-                        "nurse",
-                        "1"
-                    ]
-                }
-            },
-            "response": []
-        },
-        {
-            "name": "ServerDown (Error 500)",
-            "event": [
-                {
-                    "listen": "test",
-                    "script": {
-                        "type": "text/javascript",
-                        "exec": [
-                            "pm.test(\"Status code is 500\", function () {",
-                            "    pm.response.to.have.status(500);",
-                            "});"
-                        ]
-                    }
-                }
-            ],
-            "request": {
-                "method": "PUT",
-                "header": [
-                    {
-                        "key": "Content-Type",
-                        "value": "application/json"
-                    }
-                ],
-                "body": {
-                    "mode": "raw",
-                    "raw": "{\n  \"name\": \"Ana\",\n  \"email\": \"ana@hospital.com\"\n}",
-                    "options": {
-                        "raw": {
-                            "language": "json"
-                        }
-                    }
-                },
-                "url": {
-                    "raw": "{{baseUrl}}/nurse/1",
-                    "host": [
-                        "{{baseUrl}}"
-                    ],
-                    "path": [
-                        "nurse",
-                        "1"
-                    ]
-                }
-            },
-            "response": []
+            ]
         }
     ],
     "variable": [

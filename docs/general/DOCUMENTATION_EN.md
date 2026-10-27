@@ -138,7 +138,7 @@ flowchart LR
   * As in `GET /nurse/{id}`, the route has no `requirements: ['id' => '\d+']`: with it, `PUT /nurse/abc` would yield a router 405 instead of a 400.
   * The 409 is checked with `findOneBy(['email' => ...])` before `flush()`, and `UniqueConstraintViolationException` is also caught in case two requests arrive at the same time.
   * Same validation rules as `POST /nurse` so both endpoints stay consistent.
-* **Tests:** PHPUnit in `tests/Controller/NurseControllerUpdateTest.php` (200, 204, 400, 404, 409, 422, 500). Postman collection in `docs/postman/update/`.
+* **Tests:** PHPUnit in `tests/Controller/NurseControllerUpdateTest.php` (200, 204, 400, 404, 409, 422, 500). Postman collection in `docs/postman/update/`: the `Update` folder runs unattended (`newman run ... --folder Update`) and its last request restores nurse 1; the `Manual - DB down` folder needs the DB stopped to get the 500.
 
 ---
 

@@ -138,7 +138,7 @@ flowchart LR
   * Igual que en `GET /nurse/{id}`, la ruta no lleva `requirements: ['id' => '\d+']`: con esa restricción `PUT /nurse/abc` daría 405 del router y no un 400.
   * El 409 se comprueba con `findOneBy(['email' => ...])` antes del `flush()` y, además, se captura `UniqueConstraintViolationException` por si dos peticiones llegan a la vez.
   * Las mismas reglas de validación que `POST /nurse` para que ambos endpoints sean coherentes.
-* **Pruebas:** PHPUnit en `tests/Controller/NurseControllerUpdateTest.php` (200, 204, 400, 404, 409, 422, 500). Colección Postman en `docs/postman/update/`.
+* **Pruebas:** PHPUnit en `tests/Controller/NurseControllerUpdateTest.php` (200, 204, 400, 404, 409, 422, 500). Colección Postman en `docs/postman/update/`: la carpeta `Update` se ejecuta sin intervención (`newman run ... --folder Update`) y su última petición restaura el enfermero 1; la carpeta `Manual - DB down` necesita la BD parada para obtener el 500.
 
 ---
 
