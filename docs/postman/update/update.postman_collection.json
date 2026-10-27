@@ -141,6 +141,51 @@
             "response": []
         },
         {
+            "name": "Invalid Id (400)",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test(\"Status code is 400\", function () {",
+                            "    pm.response.to.have.status(400);",
+                            "});"
+                        ]
+                    }
+                }
+            ],
+            "request": {
+                "method": "PUT",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"name\": \"Ana\",\n  \"email\": \"ana@hospital.com\"\n}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/nurse/1a",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "nurse",
+                        "1a"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
             "name": "Not Found (Error 404)",
             "event": [
                 {
