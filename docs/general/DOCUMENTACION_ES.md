@@ -109,6 +109,19 @@ flowchart LR
   4. Si no se localiza ningún registro con ese nombre, retorna HTTP 404 con `{"error": "Nurse not found"}`.
   5. En esta misma fase se amplió el dataset de prueba a 1.000 enfermeros.
 
+### 4.5. Búsqueda de Enfermero por ID (Read nurse by ID)
+* **Rama:** `55-implement-read-nurse-by-id-endpoint-get-nurseid`
+* **Implementación:** Endpoint `GET /nurse/{id}` en `NurseController::getById`, usando `NurseRepository::find()`.
+* **Lógica:**
+  1. Valida que `{id}` sea un entero positivo (`filter_var` con `min_range: 1`); si no, HTTP 400.
+  2. Consulta el registro con `NurseRepository::find($id)`; si no existe, HTTP 404.
+  3. Devuelve el enfermero con HTTP 200 **excluyendo el campo `password`**.
+  4. Las excepciones de Doctrine (DBAL/ORM) se capturan y devuelven HTTP 500 en JSON.
+* **Decisiones técnicas:**
+  * La ruta no lleva `requirements: ['id' => '\d+']`: con esa restricción `/nurse/abc` daría 404 del router y no el 400 requerido.
+  * Se fijó `server_version` en `config/packages/doctrine.yaml` para que Doctrine no se conecte a la BD al construir el repositorio; así un fallo de conexión se captura dentro del controlador.
+* **Pruebas:** PHPUnit en `tests/Controller/NurseControllerGetByIdTest.php` (200, 400, 404, 500). Capturas en `docs/postman/readById/`.
+
 ---
 
 ## 5. Especificación de Endpoints de la API
@@ -119,6 +132,7 @@ flowchart LR
 |---|---|---|---|
 | `GET` | `/nurse/index` | Ninguno | `200 OK`: Lista completa de enfermeros<br>`500 Internal Server Error`: Archivo ausente o JSON corrupto |
 | `GET` | `/nurse/name/{name}` | Path param: `name` (string) | `200 OK`: Objeto del enfermero<br>`404 Not Found`: `{ "error": "Nurse not found" }` |
+| `GET` | `/nurse/{id}` | Path param: `id` (entero > 0) | `200 OK`: Enfermero sin `password`<br>`400 Bad Request`: `id` no válido<br>`404 Not Found`: `{ "error": "Nurse not found" }`<br>`500 Internal Server Error`: Fallo de BD |
 | `POST` | `/nurse/login` | JSON Body: `username`, `password` | `200 OK`: `{ "success": true }`<br>`400 Bad Request`: Parámetros obligatorios faltantes<br>`401 Unauthorized`: `{ "success": false }` |
 
 ### Ejemplos de Petición y Respuesta
@@ -164,6 +178,20 @@ curl -X GET http://localhost:8000/nurse/name/Ana
   "error": "Nurse not found"
 }
 ```
+
+#### 2b. Buscar por ID
+```bash
+curl -X GET http://localhost:8000/nurse/1000
+```
+**Respuesta (HTTP 200):**
+```json
+{
+  "id": 1000,
+  "name": "Andrea Alvarez",
+  "email": "andrea.alvarez@hospital.com"
+}
+```
+**Errores:** `/nurse/1a` → HTTP 400 `{"error": "Invalid id: must be a positive integer"}`; `/nurse/99999` → HTTP 404 `{"error": "Nurse not found"}`.
 
 #### 3. Inicio de sesión
 ```bash
