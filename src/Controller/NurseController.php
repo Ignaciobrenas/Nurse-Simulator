@@ -92,11 +92,15 @@ class NurseController extends AbstractController
         return $this->json($data);
     }
 
-    #[Route('/nurse/{id}', name: 'nurse_update', methods: ['PUT'], requirements: ['id' => '\d+'])]
+    // Sin "requirements" a propósito, igual que getById: /nurse/abc debe devolver 400 y no 405 del router
+    #[Route('/nurse/{id}', name: 'nurse_update', methods: ['PUT'])]
     public function update(string $id, Request $request, NurseRepository $nurseRepository, EntityManagerInterface $entityManager): JsonResponse
     {
-        // \d+ admite "0" o ids fuera del rango de int: ningún enfermero puede tenerlos
         $nurseId = filter_var($id, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+
+        if ($nurseId === false) {
+            return $this->json(['error' => 'Invalid id: must be a positive integer'], Response::HTTP_BAD_REQUEST);
+        }
 
         // 400: JSON corrupto o vacío
         try {
@@ -110,7 +114,7 @@ class NurseController extends AbstractController
         }
 
         try {
-            $nurse = $nurseId === false ? null : $nurseRepository->find($nurseId);
+            $nurse = $nurseRepository->find($nurseId);
         } catch (DBALException | ORMException) {
             return $this->json(['error' => 'Internal server error'], Response::HTTP_INTERNAL_SERVER_ERROR);
         }

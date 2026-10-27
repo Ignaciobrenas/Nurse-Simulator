@@ -109,22 +109,37 @@ class NurseControllerUpdateTest extends TestCase
         return [[''], ['{"name": "Ana",'], ['{}'], ['[]'], ['"text"']];
     }
 
-    /** @dataProvider unknownIds */
-    public function testReturns404WhenNotFound(string $id): void
+    /** @dataProvider invalidIds */
+    public function testReturns400ForInvalidId(string $id): void
     {
+        $repo = $this->createMock(NurseRepository::class);
+        $repo->expects($this->never())->method('find');
+
         $response = $this->controller()->update(
             $id,
+            $this->request('{"name": "Ana", "email": "ana@test.com"}'),
+            $repo,
+            $this->createMock(EntityManagerInterface::class)
+        );
+
+        $this->assertSame(400, $response->getStatusCode());
+    }
+
+    public static function invalidIds(): array
+    {
+        return [['abc'], ['-1'], ['0'], ['1.5'], ['99999999999999999999']];
+    }
+
+    public function testReturns404WhenNotFound(): void
+    {
+        $response = $this->controller()->update(
+            '999',
             $this->request('{"name": "Ana", "email": "ana@test.com"}'),
             $this->repoFinding(null),
             $this->createMock(EntityManagerInterface::class)
         );
 
         $this->assertSame(404, $response->getStatusCode());
-    }
-
-    public static function unknownIds(): array
-    {
-        return [['999'], ['0'], ['99999999999999999999']];
     }
 
     public function testReturns409WhenEmailBelongsToAnotherNurse(): void
