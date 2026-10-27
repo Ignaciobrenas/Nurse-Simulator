@@ -58,7 +58,7 @@ class NurseControllerGetByIdTest extends TestCase
     public function testReturns500OnDatabaseFailure(): void
     {
         $repo = $this->createMock(NurseRepository::class);
-        $repo->method('find')->willThrowException(new class('db down') extends \RuntimeException implements ORMException {});
+        $repo->method('find')->willThrowException(new class ('db down') extends \RuntimeException implements ORMException {});
 
         $this->assertSame(500, $this->controller()->getById('1', $repo)->getStatusCode());
     }
