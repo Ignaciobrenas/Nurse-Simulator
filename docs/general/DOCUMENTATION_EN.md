@@ -122,6 +122,23 @@ flowchart LR
   * `server_version` was set in `config/packages/doctrine.yaml` so Doctrine does not connect to the DB when building the repository; a connection failure is thus caught inside the controller.
 * **Tests:** PHPUnit in `tests/Controller/NurseControllerGetByIdTest.php` (200, 400, 404, 500). Screenshots in `docs/postman/readById/`.
 
+### 4.6. Update Nurse
+* **Branch:** `56-implement-update-nurse-endpoint-put-nurseid`
+* **Implementation:** `PUT /nurse/{id}` endpoint in `NurseController::update`, using `NurseRepository::find()` and `EntityManagerInterface::flush()`.
+* **Logic:**
+  1. Parses the body with `json_decode(..., JSON_THROW_ON_ERROR)`; if the JSON is malformed, empty or not an object with data, HTTP 400.
+  2. Looks the nurse up with `NurseRepository::find($id)`; if missing, HTTP 404.
+  3. Validates the fields: `name` and `email` are required (PUT replaces the resource), the email must be well formed and `password` is optional but, when sent, must be at least 8 characters with letters and numbers. Any failure returns HTTP 422.
+  4. If the submitted data matches the stored data and no `password` is sent, returns HTTP 204 with no body and does not touch the DB.
+  5. If the email belongs to another nurse, HTTP 409.
+  6. Applies the changes (lowercased email, password hashed with `password_hash`), runs `flush()` and returns HTTP 200 with the nurse **excluding the `password` field**.
+  7. Any Doctrine/DB failure during the lookup or the `flush()` returns a JSON HTTP 500.
+* **Technical decisions:**
+  * The route uses `requirements: ['id' => '\d+']` as the issue requires; `PUT /nurse/abc` is rejected by the router (405). Ids such as `0` or beyond the int range pass the router but return 404.
+  * The 409 is checked with `findOneBy(['email' => ...])` before `flush()`, and `UniqueConstraintViolationException` is also caught in case two requests arrive at the same time.
+  * Same validation rules as `POST /nurse` so both endpoints stay consistent.
+* **Tests:** PHPUnit in `tests/Controller/NurseControllerUpdateTest.php` (200, 204, 400, 404, 409, 422, 500). Postman collection in `docs/postman/update/`.
+
 ---
 
 ## 5. API Specification & Endpoints
@@ -133,6 +150,7 @@ flowchart LR
 | `GET` | `/nurse/index` | None | `200 OK`: Array of all nurses<br>`500 Internal Server Error`: Missing file or corrupt JSON |
 | `GET` | `/nurse/name/{name}` | Path param: `name` (string) | `200 OK`: Nurse object<br>`404 Not Found`: `{ "error": "Nurse not found" }` |
 | `GET` | `/nurse/{id}` | Path param: `id` (integer > 0) | `200 OK`: Nurse without `password`<br>`400 Bad Request`: invalid `id`<br>`404 Not Found`: `{ "error": "Nurse not found" }`<br>`500 Internal Server Error`: DB failure |
+| `PUT` | `/nurse/{id}` | Path param: `id` (integer)<br>JSON Body: `name`, `email`, `password` (optional) | `200 OK`: Updated nurse without `password`<br>`204 No Content`: No changes<br>`400 Bad Request`: Malformed or empty JSON<br>`404 Not Found`: `{ "error": "Nurse not found" }`<br>`409 Conflict`: Email belongs to another nurse<br>`422 Unprocessable Content`: Invalid or missing fields<br>`500 Internal Server Error`: DB failure |
 | `POST` | `/nurse/login` | JSON Body: `username`, `password` | `200 OK`: `{ "success": true }`<br>`400 Bad Request`: Missing credentials<br>`401 Unauthorized`: `{ "success": false }` |
 
 ### Request and Response Examples
@@ -192,6 +210,22 @@ curl -X GET http://localhost:8000/nurse/1000
 }
 ```
 **Errors:** `/nurse/1a` → HTTP 400 `{"error": "Invalid id: must be a positive integer"}`; `/nurse/99999` → HTTP 404 `{"error": "Nurse not found"}`.
+
+#### 2c. Update nurse
+```bash
+curl -X PUT http://localhost:8000/nurse/3 \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Lucia Updated", "email": "lucia.updated@hospital.com"}'
+```
+**Response (HTTP 200):**
+```json
+{
+  "id": 3,
+  "name": "Lucia Updated",
+  "email": "lucia.updated@hospital.com"
+}
+```
+**Errors:** repeating the same request → HTTP 204 with no body; body `{"name":` → HTTP 400 `{"error": "Malformed JSON"}`; `/nurse/99999` → HTTP 404 `{"error": "Nurse not found"}`; another nurse's email → HTTP 409 `{"error": "Email already registered"}`; email `no-email` → HTTP 422 `{"error": "Invalid email format"}`.
 
 #### 3. Nurse login
 ```bash
@@ -402,6 +436,7 @@ The collection includes organized subfolders mirroring test executions:
 * [`docs/postman/readAll`](file:///C:/Users/Ignacio/Desktop/Nurse-Simulator/docs/postman/readAll): Tests for `/nurse/index`.
 * [`docs/postman/readByName`](file:///C:/Users/Ignacio/Desktop/Nurse-Simulator/docs/postman/readByName): Tests for `/nurse/name/{name}` covering 200 and 404 statuses.
 * [`docs/postman/login`](file:///C:/Users/Ignacio/Desktop/Nurse-Simulator/docs/postman/login): Tests for `/nurse/login` covering 200, 400, and 401 statuses.
+* [`docs/postman/update`](../postman/update): Tests for `PUT /nurse/{id}` covering 200, 204, 400, 404, 409, 422, and 500 statuses.
 
 ---
 
