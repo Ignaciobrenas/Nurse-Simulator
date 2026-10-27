@@ -68,6 +68,7 @@
         }
     },
     "require-dev": {
+        "phpunit/phpunit": "*",
         "symfony/maker-bundle": "^1.68"
     }
 }
