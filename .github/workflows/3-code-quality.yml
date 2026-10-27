@@ -1,0 +1,48 @@
+name: 3 - Code Quality
+
+on:
+  push:
+    branches: [staging, main]
+  pull_request:
+    branches: [staging, main]
+
+jobs:
+  code-quality:
+    name: Lint, static checks and PSR-12
+    runs-on: ubuntu-latest
+    env:
+      # Valor ficticio: lint:container arranca el kernel pero no abre conexión
+      DATABASE_URL: "postgresql://user:pass@127.0.0.1:5432/db?serverVersion=15&charset=utf8"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          tools: composer
+          coverage: none
+
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress --no-scripts
+
+      - name: PHP syntax check (php -l)
+        run: find src tests config -name '*.php' -print0 2>/dev/null | xargs -0 -n1 php -l
+
+      - name: Lint YAML configuration
+        run: php bin/console lint:yaml config/
+
+      - name: Lint dependency injection container
+        run: php bin/console lint:container
+
+      - name: PSR-12 code style (PHP-CS-Fixer dry-run)
+        run: vendor/bin/php-cs-fixer fix --dry-run --diff --using-cache=no
