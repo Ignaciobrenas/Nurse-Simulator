@@ -122,6 +122,22 @@ flowchart LR
   * `server_version` was set in `config/packages/doctrine.yaml` so Doctrine does not connect to the DB when building the repository; a connection failure is thus caught inside the controller.
 * **Tests:** PHPUnit in `tests/Controller/NurseControllerGetByIdTest.php` (200, 400, 404, 500). Screenshots in `docs/postman/readById/`.
 
+### 4.6. Code Quality CI (Workflow `3-code-quality.yml`)
+* **Branch:** `60-setup-github-actions-ci-code-quality`
+* **Implementation:** GitHub Actions workflow at `.github/workflows/3-code-quality.yml`, with PHP-CS-Fixer (`.php-cs-fixer.dist.php`, `@PSR12` ruleset) as a dev dependency.
+* **Triggers:** `push` and `pull_request` targeting `staging` and `main`.
+* **Job steps** (`ubuntu-latest`, PHP 8.2):
+  1. `composer install` (with `vendor` cache) and copy `.env.example` to `.env`, since `.env` is git-ignored.
+  2. PHP syntax: `php -l` over every `.php` file in `src`, `tests` and `config`.
+  3. `php bin/console lint:yaml config/`.
+  4. `php bin/console lint:container`, using a dummy `DATABASE_URL` (no connection is opened).
+  5. PSR-12 style: `php-cs-fixer fix --dry-run --diff`, which fails on any difference.
+* **Technical decisions:**
+  * A `.gitattributes` (`eol=lf`) was added so Windows `autocrlf` does not cause `line_ending` false positives.
+  * Once `tests/` was covered, the check caught a real PSR-12 violation (`new class (`), fixed in a `Style:` commit.
+* **Failure simulation:** test PR #66 (closed without merging) with a missing `;` in `src/Ci/CiFailureExample.php`. The workflow stops red at the `PHP syntax check (php -l)` step.
+* **Evidence:** `docs/ci/codeQuality/` (`codeQualityGreen.png`, `codeQualityRedPR.png`, `codeQualityRed.png`).
+
 ---
 
 ## 5. API Specification & Endpoints
