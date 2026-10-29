@@ -122,6 +122,22 @@ flowchart LR
   * Se fijó `server_version` en `config/packages/doctrine.yaml` para que Doctrine no se conecte a la BD al construir el repositorio; así un fallo de conexión se captura dentro del controlador.
 * **Pruebas:** PHPUnit en `tests/Controller/NurseControllerGetByIdTest.php` (200, 400, 404, 500). Capturas en `docs/postman/readById/`.
 
+### 4.6. CI de Calidad de Código (Workflow `3-code-quality.yml`)
+* **Rama:** `60-setup-github-actions-ci-code-quality`
+* **Implementación:** Workflow de GitHub Actions en `.github/workflows/3-code-quality.yml`, con PHP-CS-Fixer (`.php-cs-fixer.dist.php`, ruleset `@PSR12`) como dependencia de desarrollo.
+* **Disparadores:** `push` y `pull_request` hacia `staging` y `main`.
+* **Pasos del job** (`ubuntu-latest`, PHP 8.2):
+  1. `composer install` (con caché de `vendor`) y copia de `.env.example` a `.env`, ya que `.env` está ignorado por git.
+  2. Sintaxis PHP: `php -l` sobre todos los `.php` de `src`, `tests` y `config`.
+  3. `php bin/console lint:yaml config/`.
+  4. `php bin/console lint:container`, con un `DATABASE_URL` ficticio (no abre conexión).
+  5. Estilo PSR-12: `php-cs-fixer fix --dry-run --diff`, que falla si hay diferencias.
+* **Decisiones técnicas:**
+  * Se añadió `.gitattributes` (`eol=lf`) para que en Windows `autocrlf` no provoque falsos positivos de `line_ending`.
+  * Al incorporar `tests/` el chequeo detectó una violación real de PSR-12 (`new class (`), corregida en un commit `Style:`.
+* **Simulación de fallo:** PR de prueba #66 (cerrada sin mergear) con un `;` ausente en `src/Ci/CiFailureExample.php`. El workflow se detiene en rojo en el paso `PHP syntax check (php -l)`.
+* **Evidencias:** `docs/ci/codeQuality/` (`codeQualityGreen.png`, `codeQualityRedPR.png`, `codeQualityRed.png`).
+
 ---
 
 ## 5. Especificación de Endpoints de la API
