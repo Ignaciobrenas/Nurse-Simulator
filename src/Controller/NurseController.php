@@ -4,6 +4,8 @@ namespace App\Controller;
 
 use App\Repository\NurseRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Doctrine\ORM\Exception\ORMException;
+use Doctrine\DBAL\Exception as DBALException;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -134,4 +136,29 @@ public function create(Request $request, EntityManagerInterface $entityManager):
         'email' => $nurse->getEmail(),
     ], Response::HTTP_CREATED);
 }
+    // Sin "requirements" a propósito: /nurse/abc debe devolver 400 y no 404 del router
+    #[Route('/nurse/{id}', name: 'nurse_get_by_id', methods: ['GET'])]
+    public function getById(string $id, NurseRepository $nurseRepository): JsonResponse
+    {
+        $nurseId = filter_var($id, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+
+        if ($nurseId === false) {
+            return $this->json(['error' => 'Invalid id: must be a positive integer'], Response::HTTP_BAD_REQUEST);
+        }
+
+        try {
+            $nurse = $nurseRepository->find($nurseId);
+        } catch (DBALException | ORMException $e) {
+            return $this->json(['error' => 'Internal server error'], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+
+        if ($nurse === null) {
+            return $this->json(['error' => 'Nurse not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        $data = $nurse->toArray();
+        unset($data['password']);
+
+        return $this->json($data);
+    }
 }
