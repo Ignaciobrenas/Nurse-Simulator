@@ -2,17 +2,18 @@
 
 namespace App\Controller;
 
+use App\Entity\Nurse;
 use App\Repository\NurseRepository;
+use Doctrine\DBAL\Exception as DBALException;
+use Doctrine\DBAL\Exception\ForeignKeyConstraintViolationException;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Doctrine\ORM\Exception\ORMException;
-use Doctrine\DBAL\Exception as DBALException;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
-use App\Entity\Nurse;
 
 class NurseController extends AbstractController
 {
@@ -31,9 +32,8 @@ class NurseController extends AbstractController
     #[Route('/nurse/index', name: 'nurse_index', methods: ['GET'])]
     public function getAll(NurseRepository $nurseRepository): JsonResponse
     {
-
-        //utilizando la Funcion de doctrine findAll()
-        $nurses = $nurseRepository->findAll() ;
+        // Utilizando la funcion de Doctrine findAll()
+        $nurses = $nurseRepository->findAll();
 
         return $this->json($nurses);
     }
@@ -250,5 +250,47 @@ class NurseController extends AbstractController
         unset($response['password']);
 
         return $this->json($response);
+    }
+
+    // Sin "requirements" a propósito: /nurse/abc debe devolver 400 y no 404 del router
+    #[Route('/nurse/{id}', name: 'nurse_delete', methods: ['DELETE'])]
+    public function delete(
+        string $id,
+        NurseRepository $nurseRepository,
+        EntityManagerInterface $entityManager
+    ): JsonResponse {
+        $nurseId = filter_var($id, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+
+        if ($nurseId === false) {
+            return $this->json(['error' => 'Invalid id: must be a positive integer'], Response::HTTP_BAD_REQUEST);
+        }
+
+        try {
+            $nurse = $nurseRepository->find($nurseId);
+        } catch (DBALException | ORMException $e) {
+            return $this->json(['error' => 'Internal server error'], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+
+        if ($nurse === null) {
+            return $this->json(['error' => 'Nurse not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        try {
+            $entityManager->remove($nurse);
+            $entityManager->flush();
+
+            return $this->json([
+                'success' => true,
+                'message' => sprintf('Nurse with id %d was successfully deleted', $nurseId),
+            ], Response::HTTP_OK);
+        } catch (ForeignKeyConstraintViolationException $e) {
+            return $this->json([
+                'error' => 'Cannot delete nurse due to existing relational dependencies',
+            ], Response::HTTP_CONFLICT);
+        } catch (DBALException | ORMException $e) {
+            return $this->json(['error' => 'Internal server error'], Response::HTTP_INTERNAL_SERVER_ERROR);
+        } catch (\Throwable $e) {
+            return $this->json(['error' => 'Internal server error'], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 }
