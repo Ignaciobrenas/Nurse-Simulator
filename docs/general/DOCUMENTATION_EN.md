@@ -156,6 +156,23 @@ flowchart LR
   * Same validation rules as `POST /nurse` so both endpoints stay consistent.
 * **Tests:** PHPUnit in `tests/Controller/NurseControllerUpdateTest.php` (200, 204, 400, 404, 409, 422, 500). Screenshots in `docs/postman/update/`.
 
+### 4.8. Security Audit & Dependencies CI (Workflow `4-security-audit.yml`)
+* **Branch:** `61-setup-github-actions-ci-for-security-audit-dependencies`
+* **Implementation:** GitHub Actions workflow at `.github/workflows/4-security-audit.yml`.
+* **Triggers:** `push` and `pull_request` targeting `staging` and `main`.
+* **Job steps** (`ubuntu-latest`, PHP 8.2):
+  1. `composer validate --strict --no-check-publish`: checks that `composer.lock` is in sync with `composer.json`.
+  2. `composer audit --locked`: looks for known vulnerabilities (CVEs / security advisories) in the versions pinned in `composer.lock`.
+  3. Uses `git ls-files` to check that no `.env`, `.env.local` or `.env.*.local` file is tracked.
+  4. Checks that every required variable used in `config/` (`%env(...)%`: `APP_SECRET`, `DATABASE_URL`, `DEFAULT_URI`) is declared in `.env.example`. Only variable names are printed, never their values.
+* **Technical decisions:**
+  * `--no-check-publish` is used because without it `--strict` fails (exit 2) on the missing `name` and `description` in `composer.json`, fields only required for publishable packages, not for a project.
+  * With `--locked`, `composer audit` reads `composer.lock` directly, so the job needs neither `composer install` nor a cache.
+  * The real `.env` does not exist in CI (it is git-ignored and holds secrets), so consistency is checked between the variables the configuration requires and those declared in `.env.example`. Variables with `default::` are skipped since they are optional.
+  * The workflow marks the PR red but does not prevent merging: blocking it would require a GitHub branch protection rule that makes this check mandatory.
+* **Failure simulation:** in PR #75, `symfony/yaml` was changed from `7.4.*` to `7.3.*` in `composer.json` without updating `composer.lock`. The workflow stops red at the `Validate composer.json / composer.lock (strict)` step (`"symfony/yaml" is in the lock file as "v7.4.20" but that does not satisfy your constraint "7.3.*"`). The change was then reverted and the workflow went back to green.
+* **Evidence:** `docs/ci/securityAudit/` (`securityAuditGreen.png`, `securityAuditGreenSteps.png`, `securityAuditGreenPR.png`, `securityAuditRed.png`, `securityAuditRedSteps.png`, `securityAuditRedPR.png`).
+
 ---
 
 ## 5. API Specification & Endpoints
