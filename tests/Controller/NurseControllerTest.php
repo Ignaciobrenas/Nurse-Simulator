@@ -14,6 +14,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\DependencyInjection\Container;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 
 class NurseControllerTest extends TestCase
 {
@@ -618,5 +619,17 @@ class NurseControllerTest extends TestCase
 
         $this->assertSame(500, $response->getStatusCode());
         $this->assertSame('Internal server error', $body['error']);
+    }
+
+    // ==========================================
+    // GET /nurse/status (deliberate CI failure simulation for #58)
+    // ==========================================
+
+    public function testStatus_Returns200WithHealthyStatus(): void
+    {
+        $response = $this->controller()->status();
+
+        $this->assertEquals(Response::HTTP_OK, $response->getStatusCode());
+        $this->assertEquals(['status' => 'ok', 'ready' => true], json_decode($response->getContent(), true));
     }
 }

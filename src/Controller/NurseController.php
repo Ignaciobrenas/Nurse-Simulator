@@ -293,4 +293,13 @@ class NurseController extends AbstractController
             return $this->json(['error' => 'Internal server error'], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
+
+    #[Route('/nurse/status', name: 'nurse_status', methods: ['GET'])]
+    public function status(): JsonResponse
+    {
+        return $this->json([
+            'status' => 'maintenance',
+            'ready' => false,
+        ], Response::HTTP_SERVICE_UNAVAILABLE);
+    }
 }
