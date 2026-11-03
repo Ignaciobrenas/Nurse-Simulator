@@ -89,6 +89,43 @@ class NurseControllerTest extends TestCase
     }
 
     // ==========================================
+    // GET /nurse/index (getAll)
+    // ==========================================
+
+    public function testGetAll_Returns200WithArrayOfNurses(): void
+    {
+        $nurse1 = $this->nurse('Ana', 'ana@test.com');
+        $nurse2 = $this->nurse('Carlos', 'carlos@test.com');
+
+        $repo = $this->createMock(NurseRepository::class);
+        $repo->expects($this->once())
+            ->method('findAll')
+            ->willReturn([$nurse1, $nurse2]);
+
+        $response = $this->controller()->getAll($repo);
+        $body = json_decode($response->getContent(), true);
+
+        $this->assertSame(200, $response->getStatusCode());
+        $this->assertCount(2, $body);
+        $this->assertSame('Ana', $body[0]['name']);
+        $this->assertSame('Carlos', $body[1]['name']);
+    }
+
+    public function testGetAll_ReturnsEmptyArrayWhenNoNurses(): void
+    {
+        $repo = $this->createMock(NurseRepository::class);
+        $repo->expects($this->once())
+            ->method('findAll')
+            ->willReturn([]);
+
+        $response = $this->controller()->getAll($repo);
+        $body = json_decode($response->getContent(), true);
+
+        $this->assertSame(200, $response->getStatusCode());
+        $this->assertSame([], $body);
+    }
+
+    // ==========================================
     // GET /nurse/{id} (getById)
     // ==========================================
 
