@@ -1,0 +1,89 @@
+name: 2 - API Postman Newman Tests
+
+on:
+  push:
+    branches: [staging, main]
+  pull_request:
+    branches: [staging, main]
+
+jobs:
+  postman-newman:
+    name: Postman Newman E2E Tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: nurse_simulator
+          POSTGRES_USER: runner
+          POSTGRES_PASSWORD: secretpassword
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      APP_ENV: dev
+      APP_SECRET: '$ecretf0rt3st'
+      DATABASE_URL: "postgresql://runner:secretpassword@127.0.0.1:5432/nurse_simulator?serverVersion=15&charset=utf8"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: pdo, pdo_pgsql, mbstring, intl
+          tools: composer
+          coverage: none
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-
+
+      - name: Prepare environment file
+        run: |
+          cp .env.example .env
+          sed -i "s|DATABASE_URL=.*|DATABASE_URL=\"postgresql://runner:secretpassword@127.0.0.1:5432/nurse_simulator?serverVersion=15&charset=utf8\"|" .env
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      - name: Run database migrations
+        run: php bin/console doctrine:migrations:migrate --no-interaction
+
+      - name: Start Symfony development server
+        run: |
+          php -S 127.0.0.1:8000 -t public > symfony_server.log 2>&1 &
+          echo "Waiting for Symfony server to respond on 127.0.0.1:8000..."
+          timeout 30 bash -c 'until curl -s http://127.0.0.1:8000/nurse/index > /dev/null 2>&1; do sleep 0.5; done' || {
+            echo "::error::Symfony server failed to start within timeout"
+            cat symfony_server.log
+            exit 1
+          }
+          echo "Symfony server is up and listening on http://127.0.0.1:8000"
+
+      - name: Run Postman Newman E2E tests
+        run: npx newman run docs/postman/nurse-api.postman_collection.json --env-var "baseUrl=http://127.0.0.1:8000" --reporters cli,junit
+
+      - name: Upload Newman JUnit test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: newman-report
+          path: newman/
+          if-no-files-found: ignore
