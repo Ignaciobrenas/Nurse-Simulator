@@ -58,7 +58,10 @@ jobs:
       - name: Prepare environment file
         run: |
           cp .env.example .env
-          sed -i "s|DATABASE_URL=.*|DATABASE_URL=\"postgresql://runner:secretpassword@127.0.0.1:5432/nurse_simulator?serverVersion=15&charset=utf8\"|" .env
+          sed -i 's|^DATABASE_URL=.*|DATABASE_URL="postgresql://runner:secretpassword@127.0.0.1:5432/nurse_simulator?serverVersion=15\&charset=utf8"|' .env
+          echo 'DATABASE_URL="postgresql://runner:secretpassword@127.0.0.1:5432/nurse_simulator?serverVersion=15&charset=utf8"' > .env.local
+          echo 'APP_SECRET="$ecretf0rt3st"' >> .env.local
+          echo 'APP_ENV=dev' >> .env.local
 
       - name: Install dependencies
         run: composer install --prefer-dist --no-progress --no-interaction
@@ -79,6 +82,12 @@ jobs:
 
       - name: Run Postman Newman E2E tests
         run: npx newman run docs/postman/nurse-api.postman_collection.json --env-var "baseUrl=http://127.0.0.1:8000" --reporters cli,junit
+
+      - name: Dump server log on failure
+        if: failure()
+        run: |
+          echo "=== Symfony Server Log ==="
+          cat symfony_server.log || true
 
       - name: Upload Newman JUnit test report
         if: always()
