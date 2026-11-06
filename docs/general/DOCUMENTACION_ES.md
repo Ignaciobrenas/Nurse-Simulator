@@ -1,4 +1,4 @@
-﻿# Nurse Simulator — Documentación General del Proyecto
+# Nurse Simulator — Documentación General del Proyecto
 
 > **M0616 - Proyecto Intermodular | DAW 2 (Curso 2026/2027)**  
 > **Centro:** STUCOM Pelai (Barcelona)  
@@ -172,6 +172,30 @@ flowchart LR
   * El workflow marca la PR en rojo pero no impide el merge: para bloquearlo habría que activar una regla de protección de rama en GitHub que exija este check.
 * **Simulación de fallo:** en la PR #75 se cambió `symfony/yaml` de `7.4.*` a `7.3.*` en `composer.json` sin actualizar `composer.lock`. El workflow se detiene en rojo en el paso `Validate composer.json / composer.lock (strict)` (`"symfony/yaml" is in the lock file as "v7.4.20" but that does not satisfy your constraint "7.3.*"`). Después se revirtió el cambio y el workflow volvió a verde.
 * **Evidencias:** `docs/ci/securityAudit/` (`securityAuditGreen.png`, `securityAuditGreenSteps.png`, `securityAuditGreenPR.png`, `securityAuditRed.png`, `securityAuditRedSteps.png`, `securityAuditRedPR.png`).
+
+### 4.9. CI de Pruebas End-to-End de la API con Postman y Newman (Workflow `2-api-postman.yml`)
+* **Rama:** `59-setup-github-actions-ci-for-postman-newman-e2e-tests`
+* **Implementación:** Workflow de GitHub Actions en `.github/workflows/2-api-postman.yml` para ejecutar pruebas integrales End-to-End (E2E) de la API REST contra un entorno real con base de datos PostgreSQL utilizando Newman en modo headless.
+* **Disparadores:** `push` y `pull_request` hacia `staging` y `main`.
+* **Pasos del job** (`ubuntu-latest`, PHP 8.2, Node.js 20, PostgreSQL 15):
+  1. Contenedor de servicio `postgres:15` con healthcheck automático (`pg_isready`) en puerto 5432.
+  2. `Setup PHP` con extensiones `pdo`, `pdo_pgsql`, `mbstring`, `intl` y `composer`.
+  3. `Setup Node.js` (versión 20) para el entorno de ejecución de Newman.
+  4. Caché de Composer (`vendor/`).
+  5. Configuración de entorno: copia `.env.example` a `.env` y genera `.env.local` con las credenciales de conexión hacia PostgreSQL del servicio runner.
+  6. Instalación de dependencias con `composer install --prefer-dist --no-progress --no-interaction`.
+  7. Ejecución de migraciones con `php bin/console doctrine:migrations:migrate --no-interaction` para inicializar el esquema relacional (`nurse`).
+  8. Levantamiento del servidor de desarrollo de Symfony en segundo plano con `php -S 127.0.0.1:8000 -t public > symfony_server.log 2>&1 &` y bucle de espera con timeout de 30 segundos verificando respuesta HTTP.
+  9. Ejecución de la colección de Postman en modo headless:
+     `npx newman run docs/postman/nurse-api.postman_collection.json --env-var "baseUrl=http://127.0.0.1:8000" --reporters cli,junit`.
+  10. En caso de fallo, volcado de logs del servidor (`symfony_server.log`).
+  11. Publicación de reporte JUnit generado por Newman mediante `actions/upload-artifact@v4` como artefacto `newman-report`.
+* **Decisiones técnicas:**
+  * Se utiliza un servicio PostgreSQL nativo en el runner de GitHub Actions para garantizar pruebas E2E fidedignas contra la base de datos sin depender de servicios externos o mocks.
+  * Para evitar problemas de escape con caracteres reservados de `sed` (como `&charset=utf8`), la configuración de la base de datos se inyecta de forma limpia mediante `.env.local`, mecanismo estándar de Symfony Dotenv.
+  * La suite de Postman cubre el ciclo de vida CRUD completo: creación (`POST /nurse`), lectura global (`GET /nurse/index`), búsqueda por nombre (`GET /nurse/name/{name}`), lectura por ID (`GET /nurse/{id}`), autenticación exitosa y fallida (`POST /nurse/login`), validaciones de error (400 y 404), actualización (`PUT /nurse/{id}`) y eliminación con verificación posterior (`DELETE /nurse/{id}`).
+* **Simulación de fallo:** Verificación obligatoria de fallo intencionado en el pipeline (alterando una aserción de la colección Postman para esperar un código de estado incorrecto como 200 en vez de 201 Created), comprobando que Newman detiene el pipeline con código de salida 1 e informando de la aserción fallida.
+* **Evidencias:** `docs/ci/apiPostman/` (`apiPostmanGreen.png`, `apiPostmanGreenSteps.png`, `apiPostmanGreenPR.png`, `apiPostmanRed.png`, `apiPostmanRedSteps.png`, `apiPostmanRedPR.png`).
 
 ---
 
