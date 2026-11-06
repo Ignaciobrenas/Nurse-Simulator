@@ -14,7 +14,7 @@
 					"script": {
 						"exec": [
 							"pm.test(\"Status code is 201 Created\", function () {",
-							"    pm.response.to.have.status(200);",
+							"    pm.response.to.have.status(201);",
 							"});",
 							"pm.test(\"Response contains created nurse data without password\", function () {",
 							"    var jsonData = pm.response.json();",
