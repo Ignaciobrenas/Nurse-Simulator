@@ -1,4 +1,4 @@
-﻿# Nurse Simulator — Comprehensive Project Documentation
+# Nurse Simulator — Comprehensive Project Documentation
 
 > **M0616 - Intermodular Project | DAW 2 (Academic Year 2026/2027)**  
 > **Institution:** STUCOM Pelai (Barcelona)  
@@ -172,6 +172,30 @@ flowchart LR
   * The workflow marks the PR red but does not prevent merging: blocking it would require a GitHub branch protection rule that makes this check mandatory.
 * **Failure simulation:** in PR #75, `symfony/yaml` was changed from `7.4.*` to `7.3.*` in `composer.json` without updating `composer.lock`. The workflow stops red at the `Validate composer.json / composer.lock (strict)` step (`"symfony/yaml" is in the lock file as "v7.4.20" but that does not satisfy your constraint "7.3.*"`). The change was then reverted and the workflow went back to green.
 * **Evidence:** `docs/ci/securityAudit/` (`securityAuditGreen.png`, `securityAuditGreenSteps.png`, `securityAuditGreenPR.png`, `securityAuditRed.png`, `securityAuditRedSteps.png`, `securityAuditRedPR.png`).
+
+### 4.9. API End-to-End Testing CI with Postman & Newman (Workflow `2-api-postman.yml`)
+* **Branch:** `59-setup-github-actions-ci-for-postman-newman-e2e-tests`
+* **Implementation:** GitHub Actions workflow at `.github/workflows/2-api-postman.yml` to execute End-to-End (E2E) integration tests for the REST API against a real PostgreSQL environment using Newman in headless mode.
+* **Triggers:** `push` and `pull_request` targeting `staging` and `main`.
+* **Job steps** (`ubuntu-latest`, PHP 8.2, Node.js 20, PostgreSQL 15):
+  1. Service container `postgres:15` with automated healthcheck (`pg_isready`) on port 5432.
+  2. `Setup PHP` with extensions `pdo`, `pdo_pgsql`, `mbstring`, `intl`, and `composer`.
+  3. `Setup Node.js` (version 20) for the Newman CLI execution environment.
+  4. Composer cache (`vendor/`).
+  5. Environment configuration: copies `.env.example` to `.env` and generates `.env.local` configured with the runner's PostgreSQL service credentials.
+  6. Dependency installation via `composer install --prefer-dist --no-progress --no-interaction`.
+  7. Database migrations via `php bin/console doctrine:migrations:migrate --no-interaction` to provision the relational schema (`nurse`).
+  8. Background Symfony development server startup via `php -S 127.0.0.1:8000 -t public > symfony_server.log 2>&1 &` with a 30-second timeout polling loop verifying HTTP response.
+  9. Headless Postman collection execution:
+     `npx newman run docs/postman/nurse-api.postman_collection.json --env-var "baseUrl=http://127.0.0.1:8000" --reporters cli,junit`.
+  10. Server log dump (`symfony_server.log`) on failure.
+  11. JUnit test report upload via `actions/upload-artifact@v4` as the `newman-report` artifact.
+* **Technical decisions:**
+  * A native PostgreSQL service is executed in the GitHub Actions runner to ensure authentic E2E tests against the real database engine without external dependencies or mocks.
+  * To prevent shell escaping issues with special characters (such as `&charset=utf8`), database configuration is cleanly overridden using `.env.local`, Symfony Dotenv's native override mechanism.
+  * The Postman collection covers the entire CRUD lifecycle: creation (`POST /nurse`), retrieval (`GET /nurse/index`), search by name (`GET /nurse/name/{name}`), lookup by ID (`GET /nurse/{id}`), valid and unauthorized authentication (`POST /nurse/login`), bad request and not found validations (400, 404), updates (`PUT /nurse/{id}`), and deletion followed by existence verification (`DELETE /nurse/{id}`).
+* **Failure simulation:** Mandatory intentional failure verification in the pipeline (modifying a Postman collection assertion to expect an incorrect status code such as 200 instead of 201 Created), ensuring Newman halts the pipeline with exit code 1 and reports the failed assertion.
+* **Evidence:** `docs/ci/apiPostman/` (`apiPostmanGreen.png`, `apiPostmanGreenSteps.png`, `apiPostmanGreenPR.png`, `apiPostmanRed.png`, `apiPostmanRedSteps.png`, `apiPostmanRedPR.png`).
 
 ---
 
