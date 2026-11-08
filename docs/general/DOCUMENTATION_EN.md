@@ -1,4 +1,4 @@
-﻿# Nurse Simulator — Comprehensive Project Documentation
+# Nurse Simulator — Comprehensive Project Documentation
 
 > **M0616 - Intermodular Project | DAW 2 (Academic Year 2026/2027)**  
 > **Institution:** STUCOM Pelai (Barcelona)  
@@ -122,6 +122,125 @@ flowchart LR
   * `server_version` was set in `config/packages/doctrine.yaml` so Doctrine does not connect to the DB when building the repository; a connection failure is thus caught inside the controller.
 * **Tests:** PHPUnit in `tests/Controller/NurseControllerGetByIdTest.php` (200, 400, 404, 500). Screenshots in `docs/postman/readById/`.
 
+### 4.6. Code Quality CI (Workflow `3-code-quality.yml`)
+* **Branch:** `60-setup-github-actions-ci-code-quality`
+* **Implementation:** GitHub Actions workflow at `.github/workflows/3-code-quality.yml`, with PHP-CS-Fixer (`.php-cs-fixer.dist.php`, `@PSR12` ruleset) as a dev dependency.
+* **Triggers:** `push` and `pull_request` targeting `staging` and `main`.
+* **Job steps** (`ubuntu-latest`, PHP 8.2):
+  1. `composer install` (with `vendor` cache) and copy `.env.example` to `.env`, since `.env` is git-ignored.
+  2. PHP syntax: `php -l` over every `.php` file in `src`, `tests` and `config`.
+  3. `php bin/console lint:yaml config/`.
+  4. `php bin/console lint:container`, using a dummy `DATABASE_URL` (no connection is opened).
+  5. PSR-12 style: `php-cs-fixer fix --dry-run --diff`, which fails on any difference.
+* **Technical decisions:**
+  * A `.gitattributes` (`eol=lf`) was added so Windows `autocrlf` does not cause `line_ending` false positives.
+  * Once `tests/` was covered, the check caught a real PSR-12 violation (`new class (`), fixed in a `Style:` commit.
+* **Failure simulation:** test PR #66 (closed without merging) with a missing `;` in `src/Ci/CiFailureExample.php`. The workflow stops red at the `PHP syntax check (php -l)` step.
+* **Evidence:** `docs/ci/codeQuality/` (`codeQualityGreen.png`, `codeQualityRedPR.png`, `codeQualityRed.png`).
+
+### 4.7. Update Nurse
+* **Branch:** `56-implement-update-nurse-endpoint-put-nurseid`
+* **Implementation:** `PUT /nurse/{id}` endpoint in `NurseController::update`, using `NurseRepository::find()` and `EntityManagerInterface::flush()`.
+* **Logic:**
+  1. Validates that `{id}` is a positive integer (`filter_var` with `min_range: 1`); otherwise HTTP 400.
+  2. Parses the body with `json_decode(..., JSON_THROW_ON_ERROR)`; if the JSON is malformed, empty or not an object with data, HTTP 400.
+  3. Looks the nurse up with `NurseRepository::find($id)`; if missing, HTTP 404.
+  4. Validates the fields: `name` and `email` are required (PUT replaces the resource), the email must be well formed and `password` is optional but, when sent, must be at least 8 characters with letters and numbers. Any failure returns HTTP 422.
+  5. If the submitted data matches the stored data and no `password` is sent, returns HTTP 204 with no body and does not touch the DB.
+  6. If the email belongs to another nurse, HTTP 409.
+  7. Applies the changes (lowercased email, password hashed with `password_hash`), runs `flush()` and returns HTTP 200 with the nurse **excluding the `password` field**.
+  8. Any Doctrine/DB failure during the lookup or the `flush()` returns a JSON HTTP 500.
+* **Technical decisions:**
+  * As in `GET /nurse/{id}`, the route has no `requirements: ['id' => '\d+']`: with it, `PUT /nurse/abc` would yield a router 405 instead of a 400.
+  * The 409 is checked with `findOneBy(['email' => ...])` before `flush()`, and `UniqueConstraintViolationException` is also caught in case two requests arrive at the same time.
+  * Same validation rules as `POST /nurse` so both endpoints stay consistent.
+* **Tests:** PHPUnit in `tests/Controller/NurseControllerUpdateTest.php` (200, 204, 400, 404, 409, 422, 500). Screenshots in `docs/postman/update/`.
+
+### 4.8. Security Audit & Dependencies CI (Workflow `4-security-audit.yml`)
+* **Branch:** `61-setup-github-actions-ci-for-security-audit-dependencies`
+* **Implementation:** GitHub Actions workflow at `.github/workflows/4-security-audit.yml`.
+* **Triggers:** `push` and `pull_request` targeting `staging` and `main`.
+* **Job steps** (`ubuntu-latest`, PHP 8.2):
+  1. `composer validate --strict --no-check-publish`: checks that `composer.lock` is in sync with `composer.json`.
+  2. `composer audit --locked`: looks for known vulnerabilities (CVEs / security advisories) in the versions pinned in `composer.lock`.
+  3. Uses `git ls-files` to check that no `.env`, `.env.local` or `.env.*.local` file is tracked.
+  4. Checks that every required variable used in `config/` (`%env(...)%`: `APP_SECRET`, `DATABASE_URL`, `DEFAULT_URI`) is declared in `.env.example`. Only variable names are printed, never their values.
+* **Technical decisions:**
+  * `--no-check-publish` is used because without it `--strict` fails (exit 2) on the missing `name` and `description` in `composer.json`, fields only required for publishable packages, not for a project.
+  * With `--locked`, `composer audit` reads `composer.lock` directly, so the job needs neither `composer install` nor a cache.
+  * The real `.env` does not exist in CI (it is git-ignored and holds secrets), so consistency is checked between the variables the configuration requires and those declared in `.env.example`. Variables with `default::` are skipped since they are optional.
+  * The workflow marks the PR red but does not prevent merging: blocking it would require a GitHub branch protection rule that makes this check mandatory.
+* **Failure simulation:** in PR #75, `symfony/yaml` was changed from `7.4.*` to `7.3.*` in `composer.json` without updating `composer.lock`. The workflow stops red at the `Validate composer.json / composer.lock (strict)` step (`"symfony/yaml" is in the lock file as "v7.4.20" but that does not satisfy your constraint "7.3.*"`). The change was then reverted and the workflow went back to green.
+* **Evidence:** `docs/ci/securityAudit/` (`securityAuditGreen.png`, `securityAuditGreenSteps.png`, `securityAuditGreenPR.png`, `securityAuditRed.png`, `securityAuditRedSteps.png`, `securityAuditRedPR.png`).
+
+### 4.9. API End-to-End Testing CI with Postman & Newman (Workflow `2-api-postman.yml`)
+* **Branch:** `59-setup-github-actions-ci-for-postman-newman-e2e-tests`
+* **Implementation:** GitHub Actions workflow at `.github/workflows/2-api-postman.yml` to execute End-to-End (E2E) integration tests for the REST API against a real PostgreSQL environment using Newman in headless mode.
+* **Triggers:** `push` and `pull_request` targeting `staging` and `main`.
+* **Job steps** (`ubuntu-latest`, PHP 8.2, Node.js 20, PostgreSQL 15):
+  1. Service container `postgres:15` with automated healthcheck (`pg_isready`) on port 5432.
+  2. `Setup PHP` with extensions `pdo`, `pdo_pgsql`, `mbstring`, `intl`, and `composer`.
+  3. `Setup Node.js` (version 20) for the Newman CLI execution environment.
+  4. Composer cache (`vendor/`).
+  5. Environment configuration: copies `.env.example` to `.env` and generates `.env.local` configured with the runner's PostgreSQL service credentials.
+  6. Dependency installation via `composer install --prefer-dist --no-progress --no-interaction`.
+  7. Database migrations via `php bin/console doctrine:migrations:migrate --no-interaction` to provision the relational schema (`nurse`).
+  8. Background Symfony development server startup via `php -S 127.0.0.1:8000 -t public > symfony_server.log 2>&1 &` with a 30-second timeout polling loop verifying HTTP response.
+  9. Headless Postman collection execution:
+     `npx newman run docs/postman/nurse-api.postman_collection.json --env-var "baseUrl=http://127.0.0.1:8000" --reporters cli,junit`.
+  10. Server log dump (`symfony_server.log`) on failure.
+  11. JUnit test report upload via `actions/upload-artifact@v4` as the `newman-report` artifact.
+* **Technical decisions:**
+  * A native PostgreSQL service is executed in the GitHub Actions runner to ensure authentic E2E tests against the real database engine without external dependencies or mocks.
+  * To prevent shell escaping issues with special characters (such as `&charset=utf8`), database configuration is cleanly overridden using `.env.local`, Symfony Dotenv's native override mechanism.
+  * The Postman collection covers the entire CRUD lifecycle: creation (`POST /nurse`), retrieval (`GET /nurse/index`), search by name (`GET /nurse/name/{name}`), lookup by ID (`GET /nurse/{id}`), valid and unauthorized authentication (`POST /nurse/login`), bad request and not found validations (400, 404), updates (`PUT /nurse/{id}`), and deletion followed by existence verification (`DELETE /nurse/{id}`).
+* **Failure simulation:** Mandatory intentional failure verification in the pipeline (modifying a Postman collection assertion to expect an incorrect status code such as 200 instead of 201 Created), ensuring Newman halts the pipeline with exit code 1 and reports the failed assertion.
+* **Evidence:** `docs/ci/apiPostman/` (`apiPostmanGreen.png`, `apiPostmanGreenSteps.png`, `apiPostmanGreenPR.png`, `apiPostmanRed.png`, `apiPostmanRedSteps.png`, `apiPostmanRedPR.png`).
+
+### 4.10. CRUD PHPUnit Testing CI (Workflow `1-crud-phpunit.yml`)
+* **Branch:** `58-setup-github-actions-ci-for-crud-phpunit-tests`
+* **Implementation:** GitHub Actions workflow at `.github/workflows/1-crud-phpunit.yml` dedicated to automating the execution of the complete unit test suite (`tests/Controller/NurseControllerTest.php`) using PHPUnit.
+* **Triggers:** `push` and `pull_request` targeting `staging` and `main` branches.
+* **Job steps** (`ubuntu-latest`, PHP 8.2):
+  1. `actions/checkout@v4` to pull repository code.
+  2. `Setup PHP` via `shivammathur/setup-php@v2` (PHP 8.2, extensions `pdo`, `pdo_pgsql`, `mbstring`, `intl`, tool `composer`, with `coverage: none` for peak pipeline performance).
+  3. Composer dependency caching (`actions/cache@v4` over the `vendor` directory keyed against `composer.lock`).
+  4. Environment preparation: copies `.env.example` to `.env`.
+  5. Dependency installation via `composer install --prefer-dist --no-progress --no-interaction`.
+  6. PHPUnit test suite execution via `php bin/phpunit`.
+* **Technical decisions:**
+  * The CI environment specifies `APP_ENV: test`, a dedicated `APP_SECRET`, and a mocked `DATABASE_URL` that prevents unnecessary external socket connections, since controllers and repositories are isolated through test doubles (mocks).
+  * The `vendor/` caching mechanism substantially reduces build latency, executing the comprehensive test suite in 14-18 seconds.
+* **Failure simulation:** In simulation PR #76 (closed without merging) on branch `test/ci-failure-58-phpunit`, a dummy endpoint `GET /nurse/status` returning HTTP 503 was intentionally added alongside a test asserting HTTP 200. The workflow halted in red at the `Run PHPUnit tests` step with exit code 1 (`FAILURES! Tests: 60, Assertions: 140, Failures: 1. Failed asserting that 503 matches expected 200.`), whereas `3-code-quality.yml` succeeded in green, validating pipeline isolation and failure blocking capabilities against regressions.
+* **Evidence:** `docs/ci/phpUnit/` (`phpUnitTestOkPR.png`, `phpUnitTestOkSummary.png`, `phpUnitTestOkSteps.png`, `phpUnitTestFailPR.png`, `phpUnitTestFailChecks.png`, `phpUnitTestFailSteps.png`).
+
+### 4.11. Create Nurse
+* **Branch:** `54-implement-create-nurse-endpoint-post-nurse`
+* **Implementation:** Endpoint `POST /nurse` in `NurseController::create`, utilizing `NurseRepository` and `EntityManagerInterface::persist()` / `flush()`.
+* **Logic:**
+  1. Parses and decodes the JSON request body with `json_decode(..., JSON_THROW_ON_ERROR)`. If the JSON is malformed or empty, returns HTTP 400.
+  2. Validates the mandatory presence of `name`, `email`, and `password`. If any field is missing or empty, returns HTTP 400 (`All fields (name, email, password) are required`).
+  3. Validates email format (`filter_var` with `FILTER_VALIDATE_EMAIL`) and password complexity constraints (minimum 8 characters, containing at least one letter and one number). Fails with HTTP 422 Unprocessable Content on validation errors.
+  4. Checks for duplicate email registration using `NurseRepository::findOneBy(['email' => ...])` or catches `UniqueConstraintViolationException`, returning HTTP 409 Conflict (`Email already registered`).
+  5. Instantiates the `Nurse` entity, hashes the password via `password_hash($password, PASSWORD_BCRYPT)`, persists and flushes changes to the database.
+  6. Returns HTTP 201 Created with the serialized nurse entity excluding the `password` field.
+  7. Catches database exceptions (Doctrine DBAL/ORM) and returns a JSON HTTP 500 response.
+* **Tests:** PHPUnit in `tests/Controller/NurseControllerTest.php` (201, 400, 409, 422, 500). Postman test evidence in `docs/postman/createNurse/`.
+
+### 4.12. Delete Nurse
+* **Branch:** `57-implement-delete-nurse-endpoint-delete-nurseid`
+* **Implementation:** Endpoint `DELETE /nurse/{id}` in `NurseController::delete`, utilizing `NurseRepository::find()` and `EntityManagerInterface::remove()` / `flush()`.
+* **Logic:**
+  1. Validates that route parameter `{id}` is a positive integer (`filter_var` with `min_range: 1`); otherwise returns HTTP 400 (`Invalid id: must be a positive integer`).
+  2. Queries the database using `NurseRepository::find($id)`; if the record is missing, returns HTTP 404 (`{"error": "Nurse not found"}`).
+  3. Invokes `$entityManager->remove($nurse)` and `$entityManager->flush()`.
+  4. Returns HTTP 200 OK with JSON confirmation: `{"success": true, "message": "Nurse with id {id} was successfully deleted"}`.
+  5. Enforces relational integrity by catching `ForeignKeyConstraintViolationException` and returning HTTP 409 Conflict (`Cannot delete nurse due to existing relational dependencies`).
+  6. Handles unexpected persistence or connection failures (Doctrine DBAL/ORM) returning HTTP 500 in JSON.
+* **Technical decisions:**
+  * Similar to `GET /nurse/{id}` and `PUT /nurse/{id}`, the route deliberately omits `requirements: ['id' => '\d+']` so that non-numeric path arguments are handled uniformly by the controller with HTTP 400 rather than throwing a router 404/405.
+* **Tests:** PHPUnit in `tests/Controller/NurseControllerTest.php` (200, 400, 404, 409, 500). Postman test evidence in `docs/postman/delete/`.
+
 ---
 
 ## 5. API Specification & Endpoints
@@ -133,6 +252,9 @@ flowchart LR
 | `GET` | `/nurse/index` | None | `200 OK`: Array of all nurses<br>`500 Internal Server Error`: Missing file or corrupt JSON |
 | `GET` | `/nurse/name/{name}` | Path param: `name` (string) | `200 OK`: Nurse object<br>`404 Not Found`: `{ "error": "Nurse not found" }` |
 | `GET` | `/nurse/{id}` | Path param: `id` (integer > 0) | `200 OK`: Nurse without `password`<br>`400 Bad Request`: invalid `id`<br>`404 Not Found`: `{ "error": "Nurse not found" }`<br>`500 Internal Server Error`: DB failure |
+| `POST` | `/nurse` | JSON Body: `name`, `email`, `password` | `201 Created`: Created nurse without `password`<br>`400 Bad Request`: Malformed JSON or missing required fields<br>`409 Conflict`: Email already registered<br>`422 Unprocessable Content`: Invalid email or weak password<br>`500 Internal Server Error`: DB failure |
+| `PUT` | `/nurse/{id}` | Path param: `id` (integer > 0)<br>JSON Body: `name`, `email`, `password` (optional) | `200 OK`: Updated nurse without `password`<br>`204 No Content`: No changes<br>`400 Bad Request`: Invalid `id` or malformed/empty JSON<br>`404 Not Found`: `{ "error": "Nurse not found" }`<br>`409 Conflict`: Email belongs to another nurse<br>`422 Unprocessable Content`: Invalid or missing fields<br>`500 Internal Server Error`: DB failure |
+| `DELETE` | `/nurse/{id}` | Path param: `id` (integer > 0) | `200 OK`: Deletion confirmation message<br>`400 Bad Request`: Invalid `id`<br>`404 Not Found`: `{ "error": "Nurse not found" }`<br>`409 Conflict`: Existing relational dependencies<br>`500 Internal Server Error`: DB failure |
 | `POST` | `/nurse/login` | JSON Body: `username`, `password` | `200 OK`: `{ "success": true }`<br>`400 Bad Request`: Missing credentials<br>`401 Unauthorized`: `{ "success": false }` |
 
 ### Request and Response Examples
@@ -193,6 +315,51 @@ curl -X GET http://localhost:8000/nurse/1000
 ```
 **Errors:** `/nurse/1a` → HTTP 400 `{"error": "Invalid id: must be a positive integer"}`; `/nurse/99999` → HTTP 404 `{"error": "Nurse not found"}`.
 
+#### 2c. Update nurse
+```bash
+curl -X PUT http://localhost:8000/nurse/3 \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Lucia Updated", "email": "lucia.updated@hospital.com"}'
+```
+**Response (HTTP 200):**
+```json
+{
+  "id": 3,
+  "name": "Lucia Updated",
+  "email": "lucia.updated@hospital.com"
+}
+```
+**Errors:** repeating the same request → HTTP 204 with no body; `/nurse/1a` → HTTP 400 `{"error": "Invalid id: must be a positive integer"}`; body `{"name":` → HTTP 400 `{"error": "Malformed JSON"}`; `/nurse/99999` → HTTP 404 `{"error": "Nurse not found"}`; another nurse's email → HTTP 409 `{"error": "Email already registered"}`; email `no-email` → HTTP 422 `{"error": "Invalid email format"}`.
+
+#### 2d. Create nurse
+```bash
+curl -X POST http://localhost:8000/nurse \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Marta Garcia", "email": "marta.garcia@hospital.com", "password": "Password123"}'
+```
+**Response (HTTP 201):**
+```json
+{
+  "id": 1001,
+  "name": "Marta Garcia",
+  "email": "marta.garcia@hospital.com"
+}
+```
+**Errors:** payload missing password → HTTP 400 `{"error": "All fields (name, email, password) are required"}`; duplicate email → HTTP 409 `{"error": "Email already registered"}`; weak password → HTTP 422 `{"error": "Password must be at least 8 characters long and contain at least one letter and one number"}`.
+
+#### 2e. Delete nurse
+```bash
+curl -X DELETE http://localhost:8000/nurse/1001
+```
+**Response (HTTP 200):**
+```json
+{
+  "success": true,
+  "message": "Nurse with id 1001 was successfully deleted"
+}
+```
+**Errors:** `/nurse/abc` → HTTP 400 `{"error": "Invalid id: must be a positive integer"}`; `/nurse/99999` → HTTP 404 `{"error": "Nurse not found"}`; nurse with existing foreign key constraints → HTTP 409 `{"error": "Cannot delete nurse due to existing relational dependencies"}`.
+
 #### 3. Nurse login
 ```bash
 curl -X POST http://localhost:8000/nurse/login \
@@ -230,13 +397,13 @@ Based on the official intermodular assignment guidelines (`pr03_Introduccio_back
 ```mermaid
 graph TD
     subgraph Individual Developments
-        M1["👤 Member 1 (Gorka)<br><b>NurseController</b><br>+login(user, pw): boolean"]
-        M2["👤 Member 2 (Roger)<br><b>NurseController</b><br>+getAll(): List&lt;Nurse&gt;"]
-        M3["👤 Member 3 (Zehao)<br><b>NurseController</b><br>+findByName(name): Nurse"]
+        M1["Member 1 (Gorka)<br><b>NurseController</b><br>+login(user, pw): boolean"]
+        M2["Member 2 (Roger)<br><b>NurseController</b><br>+getAll(): List&lt;Nurse&gt;"]
+        M3["Member 3 (Zehao)<br><b>NurseController</b><br>+findByName(name): Nurse"]
     end
 
     subgraph Centralized Group Repository
-        GC["👥 Group pr03 (Ignacio, Roger, Zehao, Gorka)<br><b>NurseController</b><br>─────────────────────────────<br>+getAll(): JsonResponse<br>+findByName(name: string): JsonResponse<br>+login(request: Request): JsonResponse"]
+        GC["Group pr03 (Ignacio, Roger, Zehao, Gorka)<br><b>NurseController</b><br>─────────────────────────────<br>+getAll(): JsonResponse<br>+findByName(name: string): JsonResponse<br>+login(request: Request): JsonResponse"]
     end
 
     M1 -->|Pull Request #17| GC
@@ -393,22 +560,39 @@ flowchart TD
 
 ---
 
-## 7. Testing & Postman Collection
+## 7. Testing, CI Pipelines & Evidence
 
-A dedicated **Postman** collection with verified request templates and test evidence is available in:
-* [`docs/postman/nurse-api.postman_collection.json`](file:///C:/Users/Ignacio/Desktop/Nurse-Simulator/docs/postman/nurse-api.postman_collection.json)
+The project features automated unit and end-to-end integration test suites together with Continuous Integration (CI) pipelines powered by GitHub Actions, supported by complete Postman collections and screenshot evidence:
 
-The collection includes organized subfolders mirroring test executions:
-* [`docs/postman/readAll`](file:///C:/Users/Ignacio/Desktop/Nurse-Simulator/docs/postman/readAll): Tests for `/nurse/index`.
-* [`docs/postman/readByName`](file:///C:/Users/Ignacio/Desktop/Nurse-Simulator/docs/postman/readByName): Tests for `/nurse/name/{name}` covering 200 and 404 statuses.
-* [`docs/postman/login`](file:///C:/Users/Ignacio/Desktop/Nurse-Simulator/docs/postman/login): Tests for `/nurse/login` covering 200, 400, and 401 statuses.
+### 7.1. Postman Test Suites & Evidence
+* Central collection: [`docs/postman/nurse-api.postman_collection.json`](file:///C:/Users/Ignacio/Desktop/Nurse-Simulator/docs/postman/nurse-api.postman_collection.json)
+* Structured subdirectories containing screenshot evidence for each endpoint:
+  * [`docs/postman/createNurse`](file:///C:/Users/Ignacio/Desktop/Nurse-Simulator/docs/postman/createNurse): Tests for `POST /nurse` (201, 400, 409, 422, 500).
+  * [`docs/postman/readAll`](file:///C:/Users/Ignacio/Desktop/Nurse-Simulator/docs/postman/readAll): Tests for `GET /nurse/index`.
+  * [`docs/postman/readByName`](file:///C:/Users/Ignacio/Desktop/Nurse-Simulator/docs/postman/readByName): Tests for `GET /nurse/name/{name}` covering 200 and 404 statuses.
+  * [`docs/postman/readById`](file:///C:/Users/Ignacio/Desktop/Nurse-Simulator/docs/postman/readById): Tests for `GET /nurse/{id}` covering 200, 400, 404, and 500 statuses.
+  * [`docs/postman/update`](file:///C:/Users/Ignacio/Desktop/Nurse-Simulator/docs/postman/update): Tests for `PUT /nurse/{id}` covering 200, 204, 400, 404, 409, 422, and 500 statuses.
+  * [`docs/postman/delete`](file:///C:/Users/Ignacio/Desktop/Nurse-Simulator/docs/postman/delete): Tests for `DELETE /nurse/{id}` covering 200, 400, 404, 409, and 500 statuses.
+  * [`docs/postman/login`](file:///C:/Users/Ignacio/Desktop/Nurse-Simulator/docs/postman/login): Tests for `POST /nurse/login` covering 200, 400, and 401 statuses.
+
+### 7.2. GitHub Actions CI Pipelines Evidence
+* [`docs/ci/phpUnit/`](file:///C:/Users/Ignacio/Desktop/Nurse-Simulator/docs/ci/phpUnit): Failure simulation and passing execution evidence for PHPUnit unit testing (`1-crud-phpunit.yml`).
+* [`docs/ci/apiPostman/`](file:///C:/Users/Ignacio/Desktop/Nurse-Simulator/docs/ci/apiPostman): Newman E2E execution evidence against PostgreSQL (`2-api-postman.yml`).
+* [`docs/ci/codeQuality/`](file:///C:/Users/Ignacio/Desktop/Nurse-Simulator/docs/ci/codeQuality): PHP-CS-Fixer PSR-12 and linting evidence (`3-code-quality.yml`).
+* [`docs/ci/securityAudit/`](file:///C:/Users/Ignacio/Desktop/Nurse-Simulator/docs/ci/securityAudit): Composer lock validation and security audit evidence (`4-security-audit.yml`).
 
 ---
 
-## 8. Project Structure
+## 8. Repository Structure
 
 ```
 Nurse-Simulator/
+├── .github/
+│   └── workflows/                  # GitHub Actions CI Workflows
+│       ├── 1-crud-phpunit.yml      # PHPUnit unit test automation
+│       ├── 2-api-postman.yml       # E2E Newman test execution with PostgreSQL
+│       ├── 3-code-quality.yml      # Syntax linting and PSR-12 compliance
+│       └── 4-security-audit.yml    # Composer dependency audit & .env leak prevention
 ├── bin/
 │   └── console                     # Symfony CLI tool
 ├── config/                         # Configuration files (routes, packages, services)
@@ -418,22 +602,38 @@ Nurse-Simulator/
 ├── data/
 │   └── nurses.json                 # Mock dataset (1,000 nurses)
 ├── docs/                           # Documentation directory
+│   ├── ci/                         # CI pipeline execution evidence screenshots
+│   │   ├── apiPostman/             # Postman Newman E2E evidence
+│   │   ├── codeQuality/            # PHP-CS-Fixer and linter evidence
+│   │   ├── phpUnit/                # PHPUnit unit testing evidence
+│   │   └── securityAudit/          # Composer audit and security evidence
 │   ├── general/
 │   │   ├── DOCUMENTACION_ES.md     # Full Spanish documentation
 │   │   ├── DOCUMENTATION_EN.md     # Full English documentation
 │   │   ├── Nurse-Simulator.docx    # Project report document
 │   │   └── Nurse-Simulator_...pdf  # Official academic report (PDF)
 │   └── postman/                    # Postman collection and run evidence
-│       ├── login/
-│       ├── readAll/
-│       ├── readByName/
+│       ├── createNurse/            # POST /nurse evidence
+│       ├── delete/                 # DELETE /nurse/{id} evidence
+│       ├── login/                  # POST /nurse/login evidence
+│       ├── readAll/                # GET /nurse/index evidence
+│       ├── readById/               # GET /nurse/{id} evidence
+│       ├── readByName/             # GET /nurse/name/{name} evidence
+│       ├── update/                 # PUT /nurse/{id} evidence
 │       └── nurse-api.postman_collection.json
 ├── public/
 │   └── index.php                   # Web application entry point (Front Controller)
 ├── src/
 │   ├── Controller/
-│   │   └── NurseController.php     # Controller handling nurse endpoints
+│   │   └── NurseController.php     # Controller handling nurse CRUD endpoints
+│   ├── Entity/
+│   │   └── Nurse.php               # Doctrine Nurse entity
+│   ├── Repository/
+│   │   └── NurseRepository.php     # Data access repository
 │   └── Kernel.php                  # Symfony application kernel
+├── tests/
+│   └── Controller/
+│       └── NurseControllerTest.php # Unified PHPUnit unit test suite
 ├── .env.example                    # Environment configuration template
 ├── composer.json                   # PHP dependencies and autoload definitions
 ├── README.md                       # Quick start guide

@@ -1,0 +1,52 @@
+name: 4 - Security Audit
+
+on:
+  push:
+    branches: [staging, main]
+  pull_request:
+    branches: [staging, main]
+
+jobs:
+  security-audit:
+    name: Composer audit, lock consistency and env check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          tools: composer
+          coverage: none
+
+      - name: Validate composer.json / composer.lock (strict)
+        run: composer validate --strict --no-check-publish
+
+      - name: Security audit of locked dependencies
+        run: composer audit --locked --no-interaction
+
+      - name: Ensure no real .env files are committed
+        run: |
+          tracked=$(git ls-files | grep -E '^\.env(\.local|\..*\.local)?$' || true)
+          if [ -n "$tracked" ]; then
+            echo "::error::Secret env files are tracked by git: $tracked"
+            exit 1
+          fi
+
+      - name: Check required env vars are declared in .env.example
+        run: |
+          required=$(grep -rhoE "%env\((resolve:)?[A-Z_]+\)%" config \
+            | sed -E 's/.*[(:]([A-Z_]+)\).*/\1/' | sort -u)
+          missing=0
+          for var in $required; do
+            if ! grep -qE "^${var}=" .env.example; then
+              echo "::error::$var is used in config/ but missing in .env.example"
+              missing=1
+            else
+              echo "OK: $var"   # solo se imprime el nombre, nunca el valor
+            fi
+          done
+          exit $missing

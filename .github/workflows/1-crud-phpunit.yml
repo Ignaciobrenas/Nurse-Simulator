@@ -1,0 +1,45 @@
+name: 1 - CRUD PHPUnit Tests
+
+on:
+  push:
+    branches: [staging, main]
+  pull_request:
+    branches: [staging, main]
+
+jobs:
+  phpunit:
+    name: PHPUnit Tests
+    runs-on: ubuntu-latest
+    env:
+      APP_ENV: test
+      KERNEL_CLASS: 'App\Kernel'
+      APP_SECRET: '$ecretf0rt3st'
+      DATABASE_URL: "postgresql://user:pass@127.0.0.1:5432/db?serverVersion=15&charset=utf8"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: pdo, pdo_pgsql, mbstring, intl
+          tools: composer
+          coverage: none
+
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-
+
+      - name: Prepare environment file
+        run: cp .env.example .env
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      - name: Run PHPUnit tests
+        run: php bin/phpunit

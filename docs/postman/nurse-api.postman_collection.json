@@ -2,22 +2,98 @@
 	"info": {
 		"_postman_id": "0d2d3a37-0056-4c41-bc74-bb2893d939fc",
 		"name": "Nurse Simulator API",
-		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-		"_exporter_id": "0"
+		"description": "Comprehensive End-to-End (E2E) API test collection for Nurse Simulator covering CRUD lifecycle, authentication, and validation scenarios.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
 		{
-			"name": "Get All Nurses",
+			"name": "1. Create Nurse (POST /nurse)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 201 Created\", function () {",
+							"    pm.response.to.have.status(201);",
+							"});",
+							"pm.test(\"Response contains created nurse data without password\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property(\"id\");",
+							"    pm.expect(jsonData.name).to.eql(\"Joy\");",
+							"    pm.expect(jsonData.email).to.eql(\"joy@hospital.com\");",
+							"    pm.expect(jsonData.password).to.be.undefined;",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"name\": \"Joy\",\n    \"email\": \"joy@hospital.com\",\n    \"password\": \"Password123\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseUrl}}/nurse",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"nurse"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "2. Get All Nurses (GET /nurse/index)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200 OK\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"pm.test(\"Response is a non-empty array of nurses\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.be.an(\"array\");",
+							"    pm.expect(jsonData.length).to.be.above(0);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
 			"request": {
 				"method": "GET",
-				"header": [],
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
 				"url": {
-					"raw": "http://localhost:8000/nurse/index",
-					"protocol": "http",
+					"raw": "{{baseUrl}}/nurse/index",
 					"host": [
-						"localhost"
+						"{{baseUrl}}"
 					],
-					"port": "8000",
 					"path": [
 						"nurse",
 						"index"
@@ -27,17 +103,38 @@
 			"response": []
 		},
 		{
-			"name": "Find Nurse by Name",
+			"name": "3. Find Nurse by Name (GET /nurse/name/{name})",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200 OK\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"pm.test(\"Response matches searched nurse name\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.name).to.eql(\"Joy\");",
+							"    pm.expect(jsonData.email).to.eql(\"joy@hospital.com\");",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
 			"request": {
 				"method": "GET",
-				"header": [],
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
 				"url": {
-					"raw": "http://localhost:8000/nurse/name/Joy",
-					"protocol": "http",
+					"raw": "{{baseUrl}}/nurse/name/Joy",
 					"host": [
-						"localhost"
+						"{{baseUrl}}"
 					],
-					"port": "8000",
 					"path": [
 						"nurse",
 						"name",
@@ -48,19 +145,81 @@
 			"response": []
 		},
 		{
-			"name": "Login Nurse",
+			"name": "4. Get Nurse by ID (GET /nurse/{id})",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200 OK\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"pm.test(\"Response contains nurse object without password\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property(\"id\");",
+							"    pm.expect(jsonData.name).to.eql(\"Joy\");",
+							"    pm.expect(jsonData.password).to.be.undefined;",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/nurse/1",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"nurse",
+						"1"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "5. Login Nurse - Success (POST /nurse/login)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200 OK\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"pm.test(\"Login succeeds with success true\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.success).to.be.true;",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
 			"request": {
 				"method": "POST",
 				"header": [
 					{
 						"key": "Content-Type",
-						"value": "application/json",
-						"type": "text"
+						"value": "application/json"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
 					}
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n    \"username\": \"Joy\",\r\n    \"password\": \"password123\"\r\n}",
+					"raw": "{\n    \"username\": \"Joy\",\n    \"password\": \"Password123\"\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -68,15 +227,282 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:8000/nurse/login",
-					"protocol": "http",
+					"raw": "{{baseUrl}}/nurse/login",
 					"host": [
-						"localhost"
+						"{{baseUrl}}"
 					],
-					"port": "8000",
 					"path": [
 						"nurse",
 						"login"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "6. Login Nurse - Unauthorized (POST /nurse/login)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 401 Unauthorized\", function () {",
+							"    pm.response.to.have.status(401);",
+							"});",
+							"pm.test(\"Login fails with success false\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.success).to.be.false;",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"username\": \"Joy\",\n    \"password\": \"WrongPassword123\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseUrl}}/nurse/login",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"nurse",
+						"login"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "7. Get Nurse by ID - Bad Request (GET /nurse/{id})",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 400 Bad Request\", function () {",
+							"    pm.response.to.have.status(400);",
+							"});",
+							"pm.test(\"Response contains validation error message\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.error).to.eql(\"Invalid id: must be a positive integer\");",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/nurse/abc",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"nurse",
+						"abc"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "8. Get Nurse by ID - Not Found (GET /nurse/{id})",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 404 Not Found\", function () {",
+							"    pm.response.to.have.status(404);",
+							"});",
+							"pm.test(\"Response contains Nurse not found error\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.error).to.eql(\"Nurse not found\");",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/nurse/99999",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"nurse",
+						"99999"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "9. Update Nurse - Success (PUT /nurse/{id})",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200 OK\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"pm.test(\"Response contains updated nurse details\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.name).to.eql(\"Joy Updated\");",
+							"    pm.expect(jsonData.email).to.eql(\"joy.updated@hospital.com\");",
+							"    pm.expect(jsonData.password).to.be.undefined;",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"name\": \"Joy Updated\",\n    \"email\": \"joy.updated@hospital.com\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseUrl}}/nurse/1",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"nurse",
+						"1"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "10. Delete Nurse - Success (DELETE /nurse/{id})",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200 OK\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"pm.test(\"Response confirms deletion\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.success).to.be.true;",
+							"    pm.expect(jsonData.message).to.contain(\"successfully deleted\");",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/nurse/1",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"nurse",
+						"1"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "11. Verify Deleted Nurse (GET /nurse/{id})",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 404 Not Found\", function () {",
+							"    pm.response.to.have.status(404);",
+							"});",
+							"pm.test(\"Response confirms nurse no longer exists\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.error).to.eql(\"Nurse not found\");",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/nurse/1",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"nurse",
+						"1"
 					]
 				}
 			},
